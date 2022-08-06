@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cmath>
 #include <fstream>
+#include <cstring>
 #include <termios.h>
 
 // represent the kind of action 

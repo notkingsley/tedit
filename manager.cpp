@@ -4,6 +4,7 @@ Manager::Manager() :
 	name("untitled.txt"),
 	doc(Document()), cur_line(doc.cur_line)
 {
+	system("touch untitled.txt");
 	curx = 0;
 	cury = 0;
 
@@ -20,8 +21,10 @@ Manager::Manager(const char* filename) :
 	name(filename), file(filename), 
 	doc(file), cur_line(doc.cur_line)
 {
-	// if(file.bad() || not file) throw 1;
 	file.close();
+	char command[strlen(filename) + 10] = "touch ";
+	strcat(command, filename);
+	system(command);
 	doc.render();
 	cury = (*cur_line)->position - 1;
 	curx = (*cur_line)->data.length();
@@ -73,6 +76,8 @@ std::pair<CharType, char> Manager::get_next()
 
 void Manager::listen()
 {
+	// clear the screen
+	printf("%c[%dJ", 0x1B, 2);
 	doc.render();
 	move_to(cury, curx);
 
@@ -201,7 +206,10 @@ void Manager::listen()
 void Manager::save()
 {
 	file = std::fstream(name, std::ios::out | std::ios::trunc);
-	for(Line* l: doc.lines)
-		file << l->data << '\n';
+	for(Line* l: doc.lines){
+		file << l->data;
+		if(l != doc.lines.back())
+			file << '\n';
+	}
 	file.close();
 }

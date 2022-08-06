@@ -8,6 +8,11 @@ Document::Document() {
 Document::Document(std::fstream& fs)
 {
 	if(fs.bad()) throw 1;
+	if(not fs or not fs.is_open()){
+		lines.push_back(new Line("", 1));
+		cur_line = lines.begin();
+		return;
+	}
 	std::string str;
 	while(not fs.eof()){
 		std::getline(fs, str);
