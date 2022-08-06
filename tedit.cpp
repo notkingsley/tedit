@@ -5,14 +5,15 @@
 
 #include "tedit.hpp"
 
-void driver()
-{
-	Manager me;
-	me.listen();
-}
-
 int main(int argc, char* argv[])
 {
-	driver();
+	if(argc == 1){
+		Manager me;
+		me.listen();
+	}
+	else{
+		Manager me(argv[1]);
+		me.listen();
+	}
 	return 0;
 }

@@ -1,9 +1,32 @@
 #include "tedit.hpp"
 
-Manager::Manager() : file(nullptr), doc(Document()), cur_line(doc.cur_line)
+Manager::Manager() : 
+	name("untitled.txt"),
+	doc(Document()), cur_line(doc.cur_line)
 {
 	curx = 0;
 	cury = 0;
+
+	// save old terminal state, then disable buffering
+	// and echo
+	struct termios newt;
+	tcgetattr(0, &oldt);
+	newt = oldt;
+	newt.c_lflag &= ~(ICANON | ECHO);
+	tcsetattr(0, TCSANOW, &newt);
+}
+
+Manager::Manager(const char* filename) :
+	name(filename), file(filename), 
+	doc(file), cur_line(doc.cur_line)
+{
+	// if(file.bad() || not file) throw 1;
+	file.close();
+	doc.render();
+	cury = (*cur_line)->position - 1;
+	curx = (*cur_line)->data.length();
+	move_to(cury, curx);
+
 	// save old terminal state, then disable buffering
 	// and echo
 	struct termios newt;
@@ -15,8 +38,8 @@ Manager::Manager() : file(nullptr), doc(Document()), cur_line(doc.cur_line)
 
 Manager::~Manager()
 {
+	save();
 	tcsetattr(0, TCSANOW, &oldt);
-	delete file;
 }
 
 std::pair<CharType, char> Manager::get_next()
@@ -173,4 +196,12 @@ void Manager::listen()
 		move_to(cury, curx);
 	}
 	std::cout << "\nBye\n";
+}
+
+void Manager::save()
+{
+	file = std::fstream(name, std::ios::out | std::ios::trunc);
+	for(Line* l: doc.lines)
+		file << l->data << '\n';
+	file.close();
 }

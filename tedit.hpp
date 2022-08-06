@@ -2,6 +2,7 @@
 #include <list>
 #include <iostream>
 #include <cmath>
+#include <fstream>
 #include <termios.h>
 
 // represent the kind of action 
@@ -52,6 +53,9 @@ public:
 	// create a document object for text editing
 	Document();
 
+	// open this document with the contents of file
+	Document(std::fstream& fs);
+
 	// close and delete this document
 	~Document();
 
@@ -62,11 +66,18 @@ public:
 	// before given position
 	// a negative number puts it at the end
 	void add_new_line(std::string str, int pos);
+
+	// discard present contents and read 
+	// contents of file
+	void read_file(std::fstream& fs);
 };
 
 class Manager{
-	// current open file
-	FILE* file;
+	// current file
+	std::fstream file;
+
+	// name of file
+	const char* name;
 
 	// document representing current open file
 	Document doc;
@@ -81,9 +92,14 @@ class Manager{
 	// line of document
 	std::__cxx11::list<Line *>::iterator& cur_line;
 
+	// save contents of document to file
+	void save();
 public:
 	// create a new manager object
 	Manager();
+
+	// create a manager object with a given file
+	Manager(const char* filename);
 
 	//destroy this manager object;
 	~Manager();
