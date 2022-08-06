@@ -8,7 +8,10 @@ int move_to(int y, int x)
 
 
 
-Document::Document() { }
+Document::Document() {
+	lines.push_back(new Line("", 1));
+	cur_line = lines.begin();
+ }
 
 Document::~Document()
 {

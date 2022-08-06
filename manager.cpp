@@ -1,15 +1,21 @@
-#include <termios.h>
-
 #include "tedit.hpp"
 
-Manager::Manager() : file(nullptr), doc(Document())
+Manager::Manager() : file(nullptr), doc(Document()), cur_line(doc.cur_line)
 {
 	curx = 0;
 	cury = 0;
+	// save old terminal state, then disable buffering
+	// and echo
+	struct termios newt;
+	tcgetattr(0, &oldt);
+	newt = oldt;
+	newt.c_lflag &= ~(ICANON | ECHO);
+	tcsetattr(0, TCSANOW, &newt);
 }
 
 Manager::~Manager()
 {
+	tcsetattr(0, TCSANOW, &oldt);
 	delete file;
 }
 
@@ -18,16 +24,16 @@ std::pair<CharType, char> Manager::get_next()
 	char c = getchar();
 	if(c >= 32 && c <= 126){
 		return {CharType::PRINTABLE, c};
-	}else if(c == 27){	// escape key
+	}else if(c == 27){								// escape key
 		c = getchar();
-		if(c == 91){	// arrow key or delete key
+		if(c == 91){								// arrow key or delete key
 			c = getchar();
-			if(c == 51){	// delete key, verify
+			if(c == 51){							// delete key, verify
 				c = getchar();
-				if(c == 126)
-					return {CharType::DELETE_KEY, c};
-			}else if(c >= 65 && c <= 68)
+				if(c == 126) return {CharType::DELETE_KEY, c};
+			}else if(c >= 65 && c <= 68){
 				return {CharType::ARROW_KEY, c};
+			}
 		}
 	}else if(c == 127){	// backspace
 		return {CharType::BACKSPACE, c};
@@ -44,59 +50,48 @@ std::pair<CharType, char> Manager::get_next()
 
 void Manager::listen()
 {
-	// save old terminal state, then disable buffering
-	// and echo
-	struct termios oldt, newt;
-	tcgetattr(0, &oldt);
-	newt = oldt;
-	newt.c_lflag &= ~(ICANON | ECHO);
-	tcsetattr(0, TCSANOW, &newt);
-
-	doc.add_new_line("", cury);
 	doc.render();
 	move_to(cury, curx);
 
 	// present action
 	std::pair<CharType, char> act;
 	// iterator to the current line
-	auto this_line = doc.lines.begin();
-	std::advance(this_line, cury);
 	bool loop = true;
 
 	while(loop){
 		act = get_next();
-		std::string& this_str = (*this_line)->data;
+		// reference to cur_line's string
+		std::string& this_str = (*cur_line)->data;
 		switch(act.first){
-			// reference to this_line's string
 			case CharType::PRINTABLE:
 			{
 				this_str.insert(curx, 1, act.second);
 				++curx;
-				(*this_line)->render();
+				(*cur_line)->render();
 				break;
 			}
 			case CharType::ARROW_KEY:
 			{
 				switch(act.second){
 					case 'A':
-						if(this_line != doc.lines.begin()){
-							--this_line;
+						if(cur_line != doc.lines.begin()){
+							--cur_line;
 							--cury;
-							curx = std::min(curx, (*this_line)->data.length());
+							curx = std::min(curx, (*cur_line)->data.length());
 						}
 						break;
 					case 'B':
-						if(*this_line != doc.lines.back()){
-							++this_line;
+						if(*cur_line != doc.lines.back()){
+							++cur_line;
 							++cury;
-							curx = std::min(curx, (*this_line)->data.length());
+							curx = std::min(curx, (*cur_line)->data.length());
 						}
 						break;
 					case 'C':
 						if(curx < this_str.length()){
 							++curx;
-						}else if(*this_line != doc.lines.back()){
-							++this_line;
+						}else if(*cur_line != doc.lines.back()){
+							++cur_line;
 							++cury;
 							curx = 0;
 						}
@@ -104,10 +99,10 @@ void Manager::listen()
 					case 'D':
 						if(curx > 0){
 							--curx;
-						}else if(this_line != doc.lines.begin()){
-							--this_line;
+						}else if(cur_line != doc.lines.begin()){
+							--cur_line;
 							--cury;
-							curx = (*this_line)->data.length();
+							curx = (*cur_line)->data.length();
 						}
 						break;
 				}
@@ -117,14 +112,14 @@ void Manager::listen()
 			{
 				if(curx > 0){
 					this_str.erase(this_str.begin() + curx - 1);
-					(*this_line)->render();
+					(*cur_line)->render();
 					--curx;
-				}else if(this_line != doc.lines.begin()){
-					auto hold = this_line;
-					--this_line;
+				}else if(cur_line != doc.lines.begin()){
+					auto hold = cur_line;
+					--cur_line;
 					--cury;
-					curx = (*this_line)->data.length();
-					(*this_line)->data += this_str;
+					curx = (*cur_line)->data.length();
+					(*cur_line)->data += this_str;
 					doc.lines.erase(hold);
 					doc.render();
 					delete *hold;
@@ -138,11 +133,11 @@ void Manager::listen()
 			{
 				if(curx < this_str.length()){
 					this_str.erase(this_str.begin() + curx);
-					(*this_line)->render();
-				}else if(*this_line != doc.lines.back()){
-					auto next = this_line;
+					(*cur_line)->render();
+				}else if(*cur_line != doc.lines.back()){
+					auto next = cur_line;
 					++next;
-					(*this_line)->data += (*next)->data;
+					(*cur_line)->data += (*next)->data;
 					doc.lines.erase(next);
 					doc.render();
 					delete *next;
@@ -157,7 +152,7 @@ void Manager::listen()
 				doc.add_new_line(this_str.substr(curx), ++cury);
 				this_str.erase(this_str.begin() + curx, this_str.end());
 				doc.render();
-				++this_line;
+				++cur_line;
 				curx = 0;
 				break;
 			}
@@ -166,7 +161,7 @@ void Manager::listen()
 				int len = this_str.length();
 				this_str.insert(curx, 4, ' ');
 				curx += 4;	// tab means 4 spaces
-				(*this_line)->render();
+				(*cur_line)->render();
 				break;
 			}
 			case CharType::EXIT:
@@ -177,7 +172,5 @@ void Manager::listen()
 		}
 		move_to(cury, curx);
 	}
-
 	std::cout << "\nBye\n";
-	tcsetattr(0, TCSANOW, &oldt);
 }

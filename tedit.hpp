@@ -2,6 +2,7 @@
 #include <list>
 #include <iostream>
 #include <cmath>
+#include <termios.h>
 
 // represent the kind of action 
 // a sequence of input characters
@@ -43,6 +44,9 @@ class Document{
 	// lines in document
 	std::list<Line*> lines;
 
+	// iterator pointing to current line
+	std::__cxx11::list<Line *>::iterator cur_line;
+
 	friend Manager;
 public:
 	// create a document object for text editing
@@ -63,10 +67,19 @@ public:
 class Manager{
 	// current open file
 	FILE* file;
+
 	// document representing current open file
 	Document doc;
+
 	// cursor position
 	size_t curx, cury;
+
+	// old state of terminal
+	termios oldt;
+
+	// reference to iterator at current
+	// line of document
+	std::__cxx11::list<Line *>::iterator& cur_line;
 
 public:
 	// create a new manager object
