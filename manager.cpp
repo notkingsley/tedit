@@ -59,7 +59,9 @@ std::pair<CharType, char> Manager::get_next()
 				if(c == 126) return {CharType::DELETE_KEY, c};
 			}else if(c >= 65 && c <= 68){
 				return {CharType::ARROW_KEY, c};
-			}
+		}
+		}else if(c == 115){							// alt-s or esc + s
+			return {CharType::SAVE, c};
 		}
 	}else if(c == 127){	// backspace
 		return {CharType::BACKSPACE, c};
@@ -93,103 +95,37 @@ void Manager::listen()
 		switch(act.first){
 			case CharType::PRINTABLE:
 			{
-				this_str.insert(curx, 1, act.second);
-				++curx;
-				(*cur_line)->render();
+				key_printable(act.second);
 				break;
 			}
 			case CharType::ARROW_KEY:
 			{
-				switch(act.second){
-					case 'A':
-						if(cur_line != doc.lines.begin()){
-							--cur_line;
-							--cury;
-							curx = std::min(curx, (*cur_line)->data.length());
-						}
-						break;
-					case 'B':
-						if(*cur_line != doc.lines.back()){
-							++cur_line;
-							++cury;
-							curx = std::min(curx, (*cur_line)->data.length());
-						}
-						break;
-					case 'C':
-						if(curx < this_str.length()){
-							++curx;
-						}else if(*cur_line != doc.lines.back()){
-							++cur_line;
-							++cury;
-							curx = 0;
-						}
-						break;
-					case 'D':
-						if(curx > 0){
-							--curx;
-						}else if(cur_line != doc.lines.begin()){
-							--cur_line;
-							--cury;
-							curx = (*cur_line)->data.length();
-						}
-						break;
-				}
+				key_arrow(act.second);
 				break;
 			}
 			case CharType::BACKSPACE:
 			{
-				if(curx > 0){
-					this_str.erase(this_str.begin() + curx - 1);
-					(*cur_line)->render();
-					--curx;
-				}else if(cur_line != doc.lines.begin()){
-					auto hold = cur_line;
-					--cur_line;
-					--cury;
-					curx = (*cur_line)->data.length();
-					(*cur_line)->data += this_str;
-					doc.lines.erase(hold);
-					doc.render();
-					delete *hold;
-					// clean last line
-					move_to(cury + 1, 0);
-					printf("%c[%dK", 0x1B, 2);
-				}
+				key_backspace();
 				break;
 			}
 			case CharType::DELETE_KEY:
 			{
-				if(curx < this_str.length()){
-					this_str.erase(this_str.begin() + curx);
-					(*cur_line)->render();
-				}else if(*cur_line != doc.lines.back()){
-					auto next = cur_line;
-					++next;
-					(*cur_line)->data += (*next)->data;
-					doc.lines.erase(next);
-					doc.render();
-					delete *next;
-					// clean last line
-					move_to(cury + 1, 0);
-					printf("%c[%dK", 0x1B, 2);
-				}
+				key_delete();
 				break;
 			}
 			case CharType::ENTER_KEY:
 			{
-				doc.add_new_line(this_str.substr(curx), ++cury);
-				this_str.erase(this_str.begin() + curx, this_str.end());
-				doc.render();
-				++cur_line;
-				curx = 0;
+				key_enter();
 				break;
 			}
 			case CharType::TAB_KEY:
 			{
-				int len = this_str.length();
-				this_str.insert(curx, 4, ' ');
-				curx += 4;	// tab means 4 spaces
-				(*cur_line)->render();
+				key_tab();
+				break;
+			}
+			case CharType::SAVE:
+			{
+				save();
 				break;
 			}
 			case CharType::EXIT:
@@ -212,4 +148,107 @@ void Manager::save()
 			file << '\n';
 	}
 	file.close();
+}
+
+void Manager::key_printable(char c)
+{
+	(*cur_line)->data.insert(curx, 1, c);
+	++curx;
+	(*cur_line)->render();
+}
+
+void Manager::key_arrow(char c)
+{
+	switch(c){
+		case 'A':
+			if(cur_line != doc.lines.begin()){
+				--cur_line;
+				--cury;
+				curx = std::min(curx, (*cur_line)->data.length());
+			}
+			break;
+		case 'B':
+			if(*cur_line != doc.lines.back()){
+				++cur_line;
+				++cury;
+				curx = std::min(curx, (*cur_line)->data.length());
+			}
+			break;
+		case 'C':
+			if(curx < (*cur_line)->data.length()){
+				++curx;
+			}else if(*cur_line != doc.lines.back()){
+				++cur_line;
+				++cury;
+				curx = 0;
+			}
+			break;
+		case 'D':
+			if(curx > 0){
+				--curx;
+			}else if(cur_line != doc.lines.begin()){
+				--cur_line;
+				--cury;
+				curx = (*cur_line)->data.length();
+			}
+			break;
+	}
+}
+
+void Manager::key_backspace()
+{
+	if(curx > 0){								// same line
+		(*cur_line)->data.erase((*cur_line)->data.begin() + curx - 1);
+		(*cur_line)->render();
+		--curx;
+	}else if(cur_line != doc.lines.begin()){	// delete from prev line
+		auto hold = cur_line;
+		--cur_line;
+		--cury;
+		curx = (*cur_line)->data.length();
+		(*cur_line)->data += (*cur_line)->data;
+		doc.lines.erase(hold);
+		doc.render();
+		delete *hold;
+		// clean last line
+		move_to(cury + 1, 0);
+		printf("%c[%dK", 0x1B, 2);
+	}
+}
+
+void Manager::key_delete()
+{
+	if(curx < (*cur_line)->data.length()){		// same line
+		(*cur_line)->data.erase((*cur_line)->data.begin() + curx);
+		(*cur_line)->render();
+	}else if(*cur_line != doc.lines.back()){	// delete from next line
+		auto next = cur_line;
+		++next;
+		(*cur_line)->data += (*next)->data;
+		doc.lines.erase(next);
+		doc.render();
+		delete *next;
+		// clean last line
+		move_to(cury + 1, 0);
+		printf("%c[%dK", 0x1B, 2);
+	}
+}
+
+void Manager::key_enter()
+{
+	// create a new line with the [curx:] slice of cur_line, adjust cury
+	doc.add_new_line((*cur_line)->data.substr(curx), ++cury);
+	// delete the [curx:] slice from cur_line
+	(*cur_line)->data.erase((*cur_line)->data.begin() + curx, (*cur_line)->data.end());
+	// adjust curx and cur_line
+	++cur_line;
+	curx = 0;
+	doc.render();
+}
+
+void Manager::key_tab()
+{
+	(*cur_line)->data.insert(curx, 4, ' ');
+	curx += 4;	// tab means 4 spaces
+	(*cur_line)->render();
 }

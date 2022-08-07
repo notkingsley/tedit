@@ -6,6 +6,9 @@
 #include <cstring>
 #include <termios.h>
 
+#ifndef TEDIT_HPP
+#define TEDIT_HPP 1
+
 // represent the kind of action 
 // a sequence of input characters
 // represent
@@ -16,6 +19,7 @@ enum class CharType{
 	BACKSPACE,
 	DELETE_KEY,
 	TAB_KEY,
+	SAVE,
 	EXIT,
 	INVALID
 };
@@ -95,6 +99,29 @@ class Manager{
 
 	// save contents of document to file
 	void save();
+
+	// insert a printable character to the 
+	// current position
+	void key_printable(char c);
+
+	// update current position according to
+	// arrow key
+	void key_arrow(char c);
+
+	// removes the corresponding character
+	// at current position for a backspace
+	void key_backspace();
+
+	// removes the corresponding character 
+	// at current position for a delete key
+	void key_delete();
+
+	// moves all character after current 
+	// position to a new line
+	void key_enter();
+
+	// inserts a tab at current position
+	void key_tab();
 public:
 	// create a new manager object
 	Manager();
@@ -115,3 +142,5 @@ public:
 
 // move to position (x, y) on terminal screen
 int move_to(int y, int x);
+
+#endif
