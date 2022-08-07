@@ -4,6 +4,7 @@
 #include <cmath>
 #include <fstream>
 #include <cstring>
+#include <algorithm>
 #include <termios.h>
 
 #ifndef TEDIT_HPP
@@ -21,6 +22,7 @@ enum class CharType{
 	TAB_KEY,
 	SAVE,
 	EXIT,
+	DISCARD_SESSION,
 	INVALID
 };
 
@@ -30,8 +32,16 @@ class Manager;
 class Line{
 	// where this line is
 	size_t position;
+
 	// string content of line
 	std::string data;
+
+	// number of tab characters in line
+	size_t tab_count;
+
+	// indent level of line, or number of
+	// leading tabs
+	size_t indent_level;
 
 	friend Document;
 	friend Manager;
@@ -44,6 +54,9 @@ public:
 
 	// render this line again
 	void render();
+
+	// update tab_count and indent_level
+	void count();
 };
 
 class Document{
@@ -87,8 +100,13 @@ class Manager{
 	// document representing current open file
 	Document doc;
 
-	// cursor position
+	// cursor position in string data
 	size_t curx, cury;
+
+	// cursor position on screen
+	// scury should be redundant, and
+	// scurx is curx if no tabs
+	size_t scurx, scury;
 
 	// old state of terminal
 	termios oldt;
@@ -122,6 +140,12 @@ class Manager{
 
 	// inserts a tab at current position
 	void key_tab();
+
+	// update scurx according to cur_line
+	// and curx
+	inline void update_scur();
+
+	const int TAB_SIZE = 8;
 public:
 	// create a new manager object
 	Manager();

@@ -5,8 +5,8 @@ Manager::Manager() :
 	doc(Document()), cur_line(doc.cur_line)
 {
 	system("touch untitled.txt");
-	curx = 0;
-	cury = 0;
+	scurx = curx = 0;
+	scury = cury = 0;
 
 	// save old terminal state, then disable buffering
 	// and echo
@@ -22,13 +22,16 @@ Manager::Manager(const char* filename) :
 	doc(file), cur_line(doc.cur_line)
 {
 	file.close();
+
 	char command[strlen(filename) + 10] = "touch ";
 	strcat(command, filename);
 	system(command);
+
 	doc.render();
-	cury = (*cur_line)->position - 1;
+	scury = cury = (*cur_line)->position - 1;
 	curx = (*cur_line)->data.length();
-	move_to(cury, curx);
+	update_scur();
+	move_to(scury, scurx);
 
 	// save old terminal state, then disable buffering
 	// and echo
@@ -41,7 +44,6 @@ Manager::Manager(const char* filename) :
 
 Manager::~Manager()
 {
-	save();
 	tcsetattr(0, TCSANOW, &oldt);
 }
 
@@ -62,6 +64,8 @@ std::pair<CharType, char> Manager::get_next()
 		}
 		}else if(c == 115){							// alt-s or esc + s
 			return {CharType::SAVE, c};
+		}else if(c == 99){							// alt-s or esc + c
+			return {CharType::DISCARD_SESSION, c};
 		}
 	}else if(c == 127){	// backspace
 		return {CharType::BACKSPACE, c};
@@ -81,17 +85,14 @@ void Manager::listen()
 	// clear the screen
 	printf("%c[%dJ", 0x1B, 2);
 	doc.render();
-	move_to(cury, curx);
+	move_to(scury, scurx);
 
 	// present action
 	std::pair<CharType, char> act;
-	// iterator to the current line
 	bool loop = true;
 
 	while(loop){
 		act = get_next();
-		// reference to cur_line's string
-		std::string& this_str = (*cur_line)->data;
 		switch(act.first){
 			case CharType::PRINTABLE:
 			{
@@ -128,13 +129,19 @@ void Manager::listen()
 				save();
 				break;
 			}
-			case CharType::EXIT:
+			case CharType::DISCARD_SESSION:
 			{
 				loop = false;
 				break;
 			}
+			case CharType::EXIT:
+			{
+				save();
+				loop = false;
+				break;
+			}
 		}
-		move_to(cury, curx);
+		move_to(scury, scurx);
 	}
 	std::cout << "\nBye\n";
 }
@@ -153,7 +160,7 @@ void Manager::save()
 void Manager::key_printable(char c)
 {
 	(*cur_line)->data.insert(curx, 1, c);
-	++curx;
+	++curx, ++scurx;
 	(*cur_line)->render();
 }
 
@@ -165,6 +172,7 @@ void Manager::key_arrow(char c)
 				--cur_line;
 				--cury;
 				curx = std::min(curx, (*cur_line)->data.length());
+				update_scur();
 			}
 			break;
 		case 'B':
@@ -172,24 +180,29 @@ void Manager::key_arrow(char c)
 				++cur_line;
 				++cury;
 				curx = std::min(curx, (*cur_line)->data.length());
+				update_scur();
 			}
 			break;
 		case 'C':
 			if(curx < (*cur_line)->data.length()){
 				++curx;
+				update_scur();
 			}else if(*cur_line != doc.lines.back()){
 				++cur_line;
 				++cury;
 				curx = 0;
+				update_scur();
 			}
 			break;
 		case 'D':
 			if(curx > 0){
 				--curx;
+				update_scur();
 			}else if(cur_line != doc.lines.begin()){
 				--cur_line;
 				--cury;
 				curx = (*cur_line)->data.length();
+				update_scur();
 			}
 			break;
 	}
@@ -201,15 +214,19 @@ void Manager::key_backspace()
 		(*cur_line)->data.erase((*cur_line)->data.begin() + curx - 1);
 		(*cur_line)->render();
 		--curx;
+		update_scur();
 	}else if(cur_line != doc.lines.begin()){	// delete from prev line
 		auto hold = cur_line;
 		--cur_line;
 		--cury;
 		curx = (*cur_line)->data.length();
-		(*cur_line)->data += (*cur_line)->data;
+
+		(*cur_line)->data += (*hold)->data;
 		doc.lines.erase(hold);
-		doc.render();
 		delete *hold;
+		doc.render();
+		update_scur();
+
 		// clean last line
 		move_to(cury + 1, 0);
 		printf("%c[%dK", 0x1B, 2);
@@ -221,13 +238,17 @@ void Manager::key_delete()
 	if(curx < (*cur_line)->data.length()){		// same line
 		(*cur_line)->data.erase((*cur_line)->data.begin() + curx);
 		(*cur_line)->render();
+		update_scur();
 	}else if(*cur_line != doc.lines.back()){	// delete from next line
 		auto next = cur_line;
 		++next;
+
 		(*cur_line)->data += (*next)->data;
 		doc.lines.erase(next);
-		doc.render();
 		delete *next;
+		doc.render();
+		update_scur();
+
 		// clean last line
 		move_to(cury + 1, 0);
 		printf("%c[%dK", 0x1B, 2);
@@ -244,11 +265,34 @@ void Manager::key_enter()
 	++cur_line;
 	curx = 0;
 	doc.render();
+	update_scur();
 }
 
 void Manager::key_tab()
 {
-	(*cur_line)->data.insert(curx, 4, ' ');
-	curx += 4;	// tab means 4 spaces
+	(*cur_line)->data.insert(curx, 1, '\t');
+	curx += 1;
 	(*cur_line)->render();
+	update_scur();
+}
+
+inline void Manager::update_scur()
+{
+
+	// offset from last tab margin
+	// and total gaps incurred by \t s
+	size_t offset = 0, total_gap = 0;
+	int passes = 0;
+	for(auto c: (*cur_line)->data){
+		if(passes++ == curx) break;
+		++offset;
+		offset %= TAB_SIZE;
+		if(c == '\t'){
+			total_gap += TAB_SIZE - offset;
+			offset = 0;
+		}
+	}
+
+	scurx = curx + total_gap;
+	scury = cury;
 }

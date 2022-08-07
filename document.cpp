@@ -13,11 +13,13 @@ Document::Document(std::fstream& fs)
 		cur_line = lines.begin();
 		return;
 	}
+
 	std::string str;
 	while(not fs.eof()){
 		std::getline(fs, str);
 		add_new_line(str, -1);
 	}
+
 	cur_line = lines.end();
 	--cur_line;
 }
@@ -40,11 +42,15 @@ void Document::add_new_line(std::string str, int pos)
 	if(pos < 0){
 		lines.push_back(lp);
 		lp->position = lines.size();
+		lp->count();
 		return;
 	}
+
 	auto iter = lines.begin();
 	std::advance(iter, pos);
 	lines.insert(iter, lp);
+	lp->count();
+
 	iter = lines.begin();
 	while(*iter != lp) ++iter;
 	while(++iter != lines.end())
@@ -63,6 +69,7 @@ void Document::read_file(std::fstream& fs)
 		std::getline(fs, str);
 		add_new_line(str, -1);
 	}
+
 	cur_line = lines.end();
 	--cur_line;
 }
