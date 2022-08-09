@@ -263,10 +263,11 @@ void Manager::key_enter()
 	(*cur_line)->data.erase((*cur_line)->data.begin() + curx, (*cur_line)->data.end());
 
 	// evaluate indent level
-
 	size_t indent = (*cur_line)->data.find_first_not_of('\t');
 	if(indent == 18446744073709551615ul)
 		indent = 0;
+	if((*cur_line)->data.back() == '{')
+		++indent;
 
 	// adjust curx and cur_line
 	++cur_line;
