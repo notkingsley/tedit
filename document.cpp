@@ -42,14 +42,12 @@ void Document::add_new_line(std::string str, int pos)
 	if(pos < 0){
 		lines.push_back(lp);
 		lp->position = lines.size();
-		lp->count();
 		return;
 	}
 
 	auto iter = lines.begin();
 	std::advance(iter, pos);
 	lines.insert(iter, lp);
-	lp->count();
 
 	iter = lines.begin();
 	while(*iter != lp) ++iter;

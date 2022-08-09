@@ -1,11 +1,6 @@
-#include <iostream>
-
-int main(int argc, char* argv[])
-{
-	std::cout <<"Hello World\n";
-}
-
-void doc(int n){
-	hey, sup;
-	good, you?;
-}
+hey
+how are ya?
+	cool, you?
+	fine, too
+	no indent?
+idk man, finding it that way too :(			

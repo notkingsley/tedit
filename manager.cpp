@@ -143,7 +143,7 @@ void Manager::listen()
 		}
 		move_to(scury, scurx);
 	}
-	std::cout << "\nBye\n";
+	move_to(doc.lines.size() + 1, 0);
 }
 
 void Manager::save()
@@ -261,9 +261,19 @@ void Manager::key_enter()
 	doc.add_new_line((*cur_line)->data.substr(curx), ++cury);
 	// delete the [curx:] slice from cur_line
 	(*cur_line)->data.erase((*cur_line)->data.begin() + curx, (*cur_line)->data.end());
+
+	// evaluate indent level
+
+	size_t indent = (*cur_line)->data.find_first_not_of('\t');
+	if(indent == 18446744073709551615ul)
+		indent = 0;
+
 	// adjust curx and cur_line
 	++cur_line;
-	curx = 0;
+	curx = indent;
+
+	// insert indent and render
+	(*cur_line)->data.insert(0, indent, '\t');
 	doc.render();
 	update_scur();
 }

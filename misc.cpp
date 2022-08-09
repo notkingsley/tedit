@@ -18,9 +18,3 @@ void Line::render()
 	std::cout << data;
 	std::cout.flush();
 }
-
-void Line::count()
-{
-	tab_count = std::count(data.begin(), data.end(), '\t');
-	indent_level = data.find_first_not_of('\t');
-}

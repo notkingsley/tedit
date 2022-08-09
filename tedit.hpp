@@ -36,13 +36,6 @@ class Line{
 	// string content of line
 	std::string data;
 
-	// number of tab characters in line
-	size_t tab_count;
-
-	// indent level of line, or number of
-	// leading tabs
-	size_t indent_level;
-
 	friend Document;
 	friend Manager;
 public:
@@ -54,9 +47,6 @@ public:
 
 	// render this line again
 	void render();
-
-	// update tab_count and indent_level
-	void count();
 };
 
 class Document{
