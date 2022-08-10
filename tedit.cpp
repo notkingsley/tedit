@@ -1,8 +1,3 @@
-#include <iostream>
-#include <cstdio>
-#include <vector>
-#include <termios.h>
-
 #include "tedit.hpp"
 
 int main(int argc, char* argv[])

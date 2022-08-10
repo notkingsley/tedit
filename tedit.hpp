@@ -20,6 +20,9 @@ enum class CharType{
 	BACKSPACE,
 	DELETE_KEY,
 	TAB_KEY,
+	CTRL_ARROW,
+	CTRL_BACKSPACE,
+	CTRL_DELETE,
 	SAVE,
 	EXIT,
 	DISCARD_SESSION,
@@ -70,7 +73,7 @@ public:
 	// display the document on the terminal
 	void render();
 
-	// inseert a new line with given string
+	// insert a new line with given string
 	// before given position
 	// a negative number puts it at the end
 	void add_new_line(std::string str, int pos);
@@ -81,7 +84,7 @@ public:
 };
 
 class Manager{
-	// current file
+	// current file, not left open
 	std::fstream file;
 
 	// name of file
@@ -131,9 +134,24 @@ class Manager{
 	// inserts a tab at current position
 	void key_tab();
 
-	// update scurx according to cur_line
-	// and curx
+	// update current position according to
+	// ctrl_arrow key
+	void key_ctrl_arrow(char c);
+
+	// remove the corresponding characters 
+	// at current position for ctrl_backspace
+	void key_ctrl_backspace();
+
+	// remove the corresponding character from
+	// current position for ctrl_delete
+	void key_ctrl_delete();
+
+	// update scurx and scury according to cur_line
+	// and curx and cury
 	inline void update_scur();
+
+	// get the next character/ action from stdin
+	std::pair<CharType, char> get_next();
 
 	const int TAB_SIZE = 8;
 public:
@@ -145,9 +163,6 @@ public:
 
 	//destroy this manager object;
 	~Manager();
-
-	// get the next character/ action from stdin
-	std::pair<CharType, char> get_next();
 
 	// listens forever on stdin, updating and 
 	// rendering internal documents accordingly

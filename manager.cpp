@@ -50,31 +50,83 @@ Manager::~Manager()
 std::pair<CharType, char> Manager::get_next()
 {
 	char c = getchar();
-	if(c >= 32 && c <= 126){
+	// match exactly
+	if (c >= 32 && c <= 126)
+	{
 		return {CharType::PRINTABLE, c};
-	}else if(c == 27){								// escape key
+	}
+	else if (c == 27)
+	{ // escape key
 		c = getchar();
-		if(c == 91){								// arrow key or delete key
+		if (c == 91)
+		{ // arrow key or delete key, or ctrl_key
 			c = getchar();
-			if(c == 51){							// delete key, verify
+			if (c == 51)
+			{ // delete key or ctrl_delete, verify
 				c = getchar();
-				if(c == 126) return {CharType::DELETE_KEY, c};
-			}else if(c >= 65 && c <= 68){
+				if (c == 126){
+					return {CharType::DELETE_KEY, c};
+				}
+				else if(c == 59)
+				{	// ctrl_delete possible, verify
+					c = getchar();
+					if(c == 53){
+						c = getchar();
+						if(c == 126)
+							return {CharType::CTRL_DELETE, c};
+					}
+				}
+			}
+			else if (c >= 65 && c <= 68)
+			{
 				return {CharType::ARROW_KEY, c};
+			}
+			else if(c == 49)
+			{	// possible ctrl_arrow
+				c = getchar();
+				if(c == 59){
+					c = getchar();
+					if(c == 53){
+						c = getchar();
+						if(c >= 65 && c <= 68){
+							return {CharType::CTRL_ARROW, c};
+						}
+					}
+				}
+			}
 		}
-		}else if(c == 115){							// alt-s or esc + s
+		else if (c == 115)
+		{ // alt-s or esc + s
 			return {CharType::SAVE, c};
-		}else if(c == 99){							// alt-s or esc + c
+		}
+		else if (c == 99)
+		{ // alt-c or esc + c
 			return {CharType::DISCARD_SESSION, c};
 		}
-	}else if(c == 127){	// backspace
+		else if( c == 100)
+		{	// alt-d or esc-d or ctrl+del
+			return {CharType::CTRL_DELETE, c};
+		}
+	}
+	else if (c == 127)
+	{ // backspace
 		return {CharType::BACKSPACE, c};
-	}else if(c == 10 || c == 13){	// enter key
+	}
+	else if (c == 10 || c == 13)
+	{ // enter key
 		return {CharType::ENTER_KEY, c};
-	}else if(c == 9){	//tab
+	}
+	else if (c == 9)
+	{ // tab
 		return {CharType::TAB_KEY, c};
-	}else if(c == 2){
+	}
+	else if (c == 2)
+	{
 		return {CharType::EXIT, c};
+	}
+	else if( c == 8 || c == 23)
+	{
+		return {CharType::CTRL_BACKSPACE, c};
 	}
 	return {CharType::INVALID, c};
 }
@@ -122,6 +174,21 @@ void Manager::listen()
 			case CharType::TAB_KEY:
 			{
 				key_tab();
+				break;
+			}
+			case CharType::CTRL_ARROW:
+			{
+				key_ctrl_arrow(act.second);
+				break;
+			}
+			case CharType::CTRL_BACKSPACE:
+			{
+				key_ctrl_backspace();
+				break;
+			}
+			case CharType::CTRL_DELETE:
+			{
+				key_ctrl_delete();
 				break;
 			}
 			case CharType::SAVE:
@@ -285,6 +352,111 @@ void Manager::key_tab()
 	curx += 1;
 	(*cur_line)->render();
 	update_scur();
+}
+
+void Manager::key_ctrl_arrow(char c)
+{
+	switch(c){
+		case 'C':
+		{
+			// end of line?
+			if(curx == (*cur_line)->data.length()){
+				return key_arrow(c);
+			}
+			// skip all whitespace
+			while(curx < (*cur_line)->data.length() 
+				&& isblank((*cur_line)->data[curx])) ++curx;
+
+			if(curx < (*cur_line)->data.length()){
+				if(isalnum((*cur_line)->data[curx]))
+					// letters
+					while(curx < (*cur_line)->data.length() 
+						&& isalnum((*cur_line)->data[curx])) ++curx;
+				else if(ispunct((*cur_line)->data[curx]))
+					// punctuations
+					while(curx < (*cur_line)->data.length() 
+						&& ispunct((*cur_line)->data[curx])) ++curx;
+			}
+
+			update_scur();
+			break;
+		}
+		case 'D':
+		{
+			// beginning of line?
+			if(curx == 0){
+				return key_arrow(c);
+			}
+			// skip all whitespace
+			while(curx > 0 && isblank((*cur_line)->data[curx - 1])) --curx;
+
+			if(curx > 0){
+				if(isalnum((*cur_line)->data[curx - 1]))
+					// letters
+					while(curx > 0 && isalnum((*cur_line)->data[curx - 1])) 
+						--curx;
+				else if(ispunct((*cur_line)->data[curx - 1]))
+					// punctuations
+					while(curx > 0 && ispunct((*cur_line)->data[curx - 1]))
+						--curx;
+			}
+
+			update_scur();
+			break;
+		}
+
+	}
+}
+
+void Manager::key_ctrl_backspace()
+{
+	// beginnng of line
+	if(curx == 0){
+		return key_backspace();
+	}
+
+	int start = curx;
+	// skip whitespace
+	while(curx > 0 && isblank((*cur_line)->data[curx - 1])) --curx;
+
+	if(curx > 0){
+		if(isalnum((*cur_line)->data[curx - 1]))
+			while(curx > 0 && isalnum((*cur_line)->data[curx - 1])) --curx;
+		else if(ispunct((*cur_line)->data[curx - 1]))
+			while(curx > 0 && ispunct((*cur_line)->data[curx - 1])) --curx;
+	}
+
+	(*cur_line)->data.erase(curx, start - curx);
+	update_scur();
+	doc.render();
+}
+
+void Manager::key_ctrl_delete()
+{
+	// end of line?
+	if(curx == (*cur_line)->data.length()){
+		return key_delete();
+	}
+
+	int end = curx;
+	// skip all whitespace
+	while(end < (*cur_line)->data.length() 
+		&& isblank((*cur_line)->data[end])) ++end;
+
+	if(end < (*cur_line)->data.length()){
+		if(isalnum((*cur_line)->data[end]))
+			// letters
+			while(end < (*cur_line)->data.length() 
+				&& isalnum((*cur_line)->data[end])) ++end;
+		else if(ispunct((*cur_line)->data[curx]))
+			// punctuations
+			while(end < (*cur_line)->data.length() 
+				&& ispunct((*cur_line)->data[end])) ++end;
+	}
+
+	(*cur_line)->data.erase(curx, end - curx);
+	update_scur();
+	doc.render();
 }
 
 inline void Manager::update_scur()
