@@ -23,6 +23,7 @@ enum class CharType{
 	CTRL_ARROW,
 	CTRL_BACKSPACE,
 	CTRL_DELETE,
+	CTRL_X,
 	SAVE,
 	EXIT,
 	DISCARD_SESSION,
@@ -145,6 +146,9 @@ class Manager{
 	// remove the corresponding character from
 	// current position for ctrl_delete
 	void key_ctrl_delete();
+
+	// completely delete the current line
+	void key_ctrl_x();
 
 	// update scurx and scury according to cur_line
 	// and curx and cury

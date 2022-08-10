@@ -121,12 +121,16 @@ std::pair<CharType, char> Manager::get_next()
 		return {CharType::TAB_KEY, c};
 	}
 	else if (c == 2)
-	{
+	{	// ctrl-b
 		return {CharType::EXIT, c};
 	}
 	else if( c == 8 || c == 23)
 	{
 		return {CharType::CTRL_BACKSPACE, c};
+	}
+	else if(c == 24)
+	{
+		return {CharType::CTRL_X, c};
 	}
 	return {CharType::INVALID, c};
 }
@@ -191,6 +195,11 @@ void Manager::listen()
 				key_ctrl_delete();
 				break;
 			}
+			case CharType::CTRL_X:
+			{
+				key_ctrl_x();
+				break;
+			}
 			case CharType::SAVE:
 			{
 				save();
@@ -208,6 +217,7 @@ void Manager::listen()
 				break;
 			}
 		}
+		update_scur();
 		move_to(scury, scurx);
 	}
 	move_to(doc.lines.size() + 1, 0);
@@ -239,7 +249,6 @@ void Manager::key_arrow(char c)
 				--cur_line;
 				--cury;
 				curx = std::min(curx, (*cur_line)->data.length());
-				update_scur();
 			}
 			break;
 		case 'B':
@@ -247,29 +256,24 @@ void Manager::key_arrow(char c)
 				++cur_line;
 				++cury;
 				curx = std::min(curx, (*cur_line)->data.length());
-				update_scur();
 			}
 			break;
 		case 'C':
 			if(curx < (*cur_line)->data.length()){
 				++curx;
-				update_scur();
 			}else if(*cur_line != doc.lines.back()){
 				++cur_line;
 				++cury;
 				curx = 0;
-				update_scur();
 			}
 			break;
 		case 'D':
 			if(curx > 0){
 				--curx;
-				update_scur();
 			}else if(cur_line != doc.lines.begin()){
 				--cur_line;
 				--cury;
 				curx = (*cur_line)->data.length();
-				update_scur();
 			}
 			break;
 	}
@@ -281,7 +285,6 @@ void Manager::key_backspace()
 		(*cur_line)->data.erase((*cur_line)->data.begin() + curx - 1);
 		(*cur_line)->render();
 		--curx;
-		update_scur();
 	}else if(cur_line != doc.lines.begin()){	// delete from prev line
 		auto hold = cur_line;
 		--cur_line;
@@ -289,13 +292,13 @@ void Manager::key_backspace()
 		curx = (*cur_line)->data.length();
 
 		(*cur_line)->data += (*hold)->data;
+		std::for_each(hold, doc.lines.end(), [](auto x){x->position--;});
 		doc.lines.erase(hold);
 		delete *hold;
 		doc.render();
-		update_scur();
 
 		// clean last line
-		move_to(cury + 1, 0);
+		move_to(doc.lines.size(), 0);
 		printf("%c[%dK", 0x1B, 2);
 	}
 }
@@ -305,19 +308,18 @@ void Manager::key_delete()
 	if(curx < (*cur_line)->data.length()){		// same line
 		(*cur_line)->data.erase((*cur_line)->data.begin() + curx);
 		(*cur_line)->render();
-		update_scur();
 	}else if(*cur_line != doc.lines.back()){	// delete from next line
 		auto next = cur_line;
 		++next;
 
 		(*cur_line)->data += (*next)->data;
+		std::for_each(next, doc.lines.end(), [](auto x){x->position--;});
 		doc.lines.erase(next);
 		delete *next;
 		doc.render();
-		update_scur();
 
 		// clean last line
-		move_to(cury + 1, 0);
+		move_to(doc.lines.size(), 0);
 		printf("%c[%dK", 0x1B, 2);
 	}
 }
@@ -343,7 +345,6 @@ void Manager::key_enter()
 	// insert indent and render
 	(*cur_line)->data.insert(0, indent, '\t');
 	doc.render();
-	update_scur();
 }
 
 void Manager::key_tab()
@@ -351,7 +352,6 @@ void Manager::key_tab()
 	(*cur_line)->data.insert(curx, 1, '\t');
 	curx += 1;
 	(*cur_line)->render();
-	update_scur();
 }
 
 void Manager::key_ctrl_arrow(char c)
@@ -378,7 +378,6 @@ void Manager::key_ctrl_arrow(char c)
 						&& ispunct((*cur_line)->data[curx])) ++curx;
 			}
 
-			update_scur();
 			break;
 		}
 		case 'D':
@@ -401,7 +400,6 @@ void Manager::key_ctrl_arrow(char c)
 						--curx;
 			}
 
-			update_scur();
 			break;
 		}
 
@@ -427,7 +425,6 @@ void Manager::key_ctrl_backspace()
 	}
 
 	(*cur_line)->data.erase(curx, start - curx);
-	update_scur();
 	doc.render();
 }
 
@@ -455,8 +452,17 @@ void Manager::key_ctrl_delete()
 	}
 
 	(*cur_line)->data.erase(curx, end - curx);
-	update_scur();
 	doc.render();
+}
+
+void Manager::key_ctrl_x()
+{
+	(*cur_line)->data.erase();
+	size_t hold = curx;
+	curx = 0;
+	key_delete();
+	doc.render();
+	curx = std::min(hold, (*cur_line)->data.length());
 }
 
 inline void Manager::update_scur()
