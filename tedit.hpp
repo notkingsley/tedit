@@ -19,7 +19,6 @@ enum class CharType{
 	ENTER_KEY,
 	BACKSPACE,
 	DELETE_KEY,
-	TAB_KEY,
 	CTRL_ARROW,
 	CTRL_BACKSPACE,
 	CTRL_DELETE,
@@ -33,12 +32,9 @@ enum class CharType{
 class Document;
 class Manager;
 
-class Line{
+class Line : public std::string{
 	// where this line is
 	size_t position;
-
-	// string content of line
-	std::string data;
 
 	friend Document;
 	friend Manager;
@@ -51,6 +47,9 @@ public:
 
 	// render this line again
 	void render();
+
+	// return a reference to the underlying string
+	std::string& data();
 };
 
 class Document{
@@ -82,6 +81,26 @@ public:
 	// discard present contents and read 
 	// contents of file
 	void read_file(std::fstream& fs);
+
+	// save the present contents of document 
+	// to output filestream
+	void save(std::fstream& fs);
+
+	// insert a single printable char to
+	// position idx of current line
+	void insert(char c, size_t idx);
+
+	// remove the character before idx
+	// on current line
+	void backspace(size_t idx);
+
+	// remove the character at idx 
+	// on cuurent line
+	void del_char(size_t idx);
+
+	// remove a line. cur_line is removed 
+	// if pos is not given or is null
+	void remove_line(std::__cxx11::list<Line *>::iterator pos);
 };
 
 class Manager{
@@ -131,9 +150,6 @@ class Manager{
 	// moves all character after current 
 	// position to a new line
 	void key_enter();
-
-	// inserts a tab at current position
-	void key_tab();
 
 	// update current position according to
 	// ctrl_arrow key

@@ -29,7 +29,7 @@ Manager::Manager(const char* filename) :
 
 	doc.render();
 	scury = cury = (*cur_line)->position - 1;
-	curx = (*cur_line)->data.length();
+	curx = (*cur_line)->length();
 	update_scur();
 	move_to(scury, scurx);
 
@@ -118,7 +118,7 @@ std::pair<CharType, char> Manager::get_next()
 	}
 	else if (c == 9)
 	{ // tab
-		return {CharType::TAB_KEY, c};
+		return {CharType::PRINTABLE, c};
 	}
 	else if (c == 2)
 	{	// ctrl-b
@@ -175,11 +175,6 @@ void Manager::listen()
 				key_enter();
 				break;
 			}
-			case CharType::TAB_KEY:
-			{
-				key_tab();
-				break;
-			}
 			case CharType::CTRL_ARROW:
 			{
 				key_ctrl_arrow(act.second);
@@ -226,19 +221,13 @@ void Manager::listen()
 void Manager::save()
 {
 	file = std::fstream(name, std::ios::out | std::ios::trunc);
-	for(Line* l: doc.lines){
-		file << l->data;
-		if(l != doc.lines.back())
-			file << '\n';
-	}
+	doc.save(file);
 	file.close();
 }
 
 void Manager::key_printable(char c)
 {
-	(*cur_line)->data.insert(curx, 1, c);
-	++curx, ++scurx;
-	(*cur_line)->render();
+	doc.insert(c, curx++);
 }
 
 void Manager::key_arrow(char c)
@@ -248,18 +237,18 @@ void Manager::key_arrow(char c)
 			if(cur_line != doc.lines.begin()){
 				--cur_line;
 				--cury;
-				curx = std::min(curx, (*cur_line)->data.length());
+				curx = std::min(curx, (*cur_line)->length());
 			}
 			break;
 		case 'B':
 			if(*cur_line != doc.lines.back()){
 				++cur_line;
 				++cury;
-				curx = std::min(curx, (*cur_line)->data.length());
+				curx = std::min(curx, (*cur_line)->length());
 			}
 			break;
 		case 'C':
-			if(curx < (*cur_line)->data.length()){
+			if(curx < (*cur_line)->length()){
 				++curx;
 			}else if(*cur_line != doc.lines.back()){
 				++cur_line;
@@ -273,7 +262,7 @@ void Manager::key_arrow(char c)
 			}else if(cur_line != doc.lines.begin()){
 				--cur_line;
 				--cury;
-				curx = (*cur_line)->data.length();
+				curx = (*cur_line)->length();
 			}
 			break;
 	}
@@ -282,20 +271,16 @@ void Manager::key_arrow(char c)
 void Manager::key_backspace()
 {
 	if(curx > 0){								// same line
-		(*cur_line)->data.erase((*cur_line)->data.begin() + curx - 1);
-		(*cur_line)->render();
-		--curx;
-	}else if(cur_line != doc.lines.begin()){	// delete from prev line
-		auto hold = cur_line;
-		--cur_line;
+		doc.backspace(curx--);
+	}
+	else if(cur_line != doc.lines.begin())
+	{											// delete from prev line
+		std::string hold = **cur_line;
+		doc.remove_line(cur_line);
 		--cury;
-		curx = (*cur_line)->data.length();
-
-		(*cur_line)->data += (*hold)->data;
-		std::for_each(hold, doc.lines.end(), [](auto x){x->position--;});
-		doc.lines.erase(hold);
-		delete *hold;
-		doc.render();
+		curx = (*cur_line)->length();
+		**cur_line += hold;
+		(*cur_line)->render();
 
 		// clean last line
 		move_to(doc.lines.size(), 0);
@@ -305,18 +290,15 @@ void Manager::key_backspace()
 
 void Manager::key_delete()
 {
-	if(curx < (*cur_line)->data.length()){		// same line
-		(*cur_line)->data.erase((*cur_line)->data.begin() + curx);
-		(*cur_line)->render();
-	}else if(*cur_line != doc.lines.back()){	// delete from next line
+	if(curx < (*cur_line)->length()){			// same line
+		doc.del_char(curx);
+	}
+	else if(*cur_line != doc.lines.back())
+	{											// delete from next line
 		auto next = cur_line;
 		++next;
-
-		(*cur_line)->data += (*next)->data;
-		std::for_each(next, doc.lines.end(), [](auto x){x->position--;});
-		doc.lines.erase(next);
-		delete *next;
-		doc.render();
+		**cur_line += **next;
+		doc.remove_line(next);
 
 		// clean last line
 		move_to(doc.lines.size(), 0);
@@ -327,15 +309,15 @@ void Manager::key_delete()
 void Manager::key_enter()
 {
 	// create a new line with the [curx:] slice of cur_line, adjust cury
-	doc.add_new_line((*cur_line)->data.substr(curx), ++cury);
+	doc.add_new_line((*cur_line)->substr(curx), ++cury);
 	// delete the [curx:] slice from cur_line
-	(*cur_line)->data.erase((*cur_line)->data.begin() + curx, (*cur_line)->data.end());
+	(*cur_line)->erase((*cur_line)->begin() + curx, (*cur_line)->end());
 
 	// evaluate indent level
-	size_t indent = (*cur_line)->data.find_first_not_of('\t');
+	size_t indent = (*cur_line)->find_first_not_of('\t');
 	if(indent == 18446744073709551615ul)
 		indent = 0;
-	if((*cur_line)->data.back() == '{')
+	if((*cur_line)->back() == '{')
 		++indent;
 
 	// adjust curx and cur_line
@@ -343,15 +325,8 @@ void Manager::key_enter()
 	curx = indent;
 
 	// insert indent and render
-	(*cur_line)->data.insert(0, indent, '\t');
+	(*cur_line)->insert(0, indent, '\t');
 	doc.render();
-}
-
-void Manager::key_tab()
-{
-	(*cur_line)->data.insert(curx, 1, '\t');
-	curx += 1;
-	(*cur_line)->render();
 }
 
 void Manager::key_ctrl_arrow(char c)
@@ -360,22 +335,22 @@ void Manager::key_ctrl_arrow(char c)
 		case 'C':
 		{
 			// end of line?
-			if(curx == (*cur_line)->data.length()){
+			if(curx == (*cur_line)->length()){
 				return key_arrow(c);
 			}
 			// skip all whitespace
-			while(curx < (*cur_line)->data.length() 
-				&& isblank((*cur_line)->data[curx])) ++curx;
+			while(curx < (*cur_line)->length() 
+				&& isblank((**cur_line)[curx])) ++curx;
 
-			if(curx < (*cur_line)->data.length()){
-				if(isalnum((*cur_line)->data[curx]))
+			if(curx < (*cur_line)->length()){
+				if(isalnum((**cur_line)[curx]))
 					// letters
-					while(curx < (*cur_line)->data.length() 
-						&& isalnum((*cur_line)->data[curx])) ++curx;
-				else if(ispunct((*cur_line)->data[curx]))
+					while(curx < (*cur_line)->length() 
+						&& isalnum((**cur_line)[curx])) ++curx;
+				else if(ispunct((**cur_line)[curx]))
 					// punctuations
-					while(curx < (*cur_line)->data.length() 
-						&& ispunct((*cur_line)->data[curx])) ++curx;
+					while(curx < (*cur_line)->length() 
+						&& ispunct((**cur_line)[curx])) ++curx;
 			}
 
 			break;
@@ -387,16 +362,16 @@ void Manager::key_ctrl_arrow(char c)
 				return key_arrow(c);
 			}
 			// skip all whitespace
-			while(curx > 0 && isblank((*cur_line)->data[curx - 1])) --curx;
+			while(curx > 0 && isblank((**cur_line)[curx - 1])) --curx;
 
 			if(curx > 0){
-				if(isalnum((*cur_line)->data[curx - 1]))
+				if(isalnum((**cur_line)[curx - 1]))
 					// letters
-					while(curx > 0 && isalnum((*cur_line)->data[curx - 1])) 
+					while(curx > 0 && isalnum((**cur_line)[curx - 1])) 
 						--curx;
-				else if(ispunct((*cur_line)->data[curx - 1]))
+				else if(ispunct((**cur_line)[curx - 1]))
 					// punctuations
-					while(curx > 0 && ispunct((*cur_line)->data[curx - 1]))
+					while(curx > 0 && ispunct((**cur_line)[curx - 1]))
 						--curx;
 			}
 
@@ -415,54 +390,53 @@ void Manager::key_ctrl_backspace()
 
 	int start = curx;
 	// skip whitespace
-	while(curx > 0 && isblank((*cur_line)->data[curx - 1])) --curx;
+	while(curx > 0 && isblank((**cur_line)[curx - 1])) --curx;
 
 	if(curx > 0){
-		if(isalnum((*cur_line)->data[curx - 1]))
-			while(curx > 0 && isalnum((*cur_line)->data[curx - 1])) --curx;
-		else if(ispunct((*cur_line)->data[curx - 1]))
-			while(curx > 0 && ispunct((*cur_line)->data[curx - 1])) --curx;
+		if(isalnum((**cur_line)[curx - 1]))
+			while(curx > 0 && isalnum((**cur_line)[curx - 1])) --curx;
+		else if(ispunct((**cur_line)[curx - 1]))
+			while(curx > 0 && ispunct((**cur_line)[curx - 1])) --curx;
 	}
 
-	(*cur_line)->data.erase(curx, start - curx);
+	(*cur_line)->erase(curx, start - curx);
 	doc.render();
 }
 
 void Manager::key_ctrl_delete()
 {
 	// end of line?
-	if(curx == (*cur_line)->data.length()){
+	if(curx == (*cur_line)->length()){
 		return key_delete();
 	}
 
 	int end = curx;
 	// skip all whitespace
-	while(end < (*cur_line)->data.length() 
-		&& isblank((*cur_line)->data[end])) ++end;
+	while(end < (*cur_line)->length() 
+		&& isblank((**cur_line)[end])) ++end;
 
-	if(end < (*cur_line)->data.length()){
-		if(isalnum((*cur_line)->data[end]))
+	if(end < (*cur_line)->length()){
+		if(isalnum((**cur_line)[end]))
 			// letters
-			while(end < (*cur_line)->data.length() 
-				&& isalnum((*cur_line)->data[end])) ++end;
-		else if(ispunct((*cur_line)->data[curx]))
+			while(end < (*cur_line)->length() 
+				&& isalnum((**cur_line)[end])) ++end;
+		else if(ispunct((**cur_line)[curx]))
 			// punctuations
-			while(end < (*cur_line)->data.length() 
-				&& ispunct((*cur_line)->data[end])) ++end;
+			while(end < (*cur_line)->length() 
+				&& ispunct((**cur_line)[end])) ++end;
 	}
 
-	(*cur_line)->data.erase(curx, end - curx);
+	(*cur_line)->erase(curx, end - curx);
 	doc.render();
 }
 
 void Manager::key_ctrl_x()
 {
-	(*cur_line)->data.erase();
+	(*cur_line)->erase();
 	size_t hold = curx;
 	curx = 0;
 	key_delete();
-	doc.render();
-	curx = std::min(hold, (*cur_line)->data.length());
+	curx = std::min(hold, (*cur_line)->length());
 }
 
 inline void Manager::update_scur()
@@ -472,7 +446,7 @@ inline void Manager::update_scur()
 	// and total gaps incurred by \t s
 	size_t offset = 0, total_gap = 0;
 	int passes = 0;
-	for(auto c: (*cur_line)->data){
+	for(auto c: **cur_line){
 		if(passes++ == curx) break;
 		++offset;
 		offset %= TAB_SIZE;

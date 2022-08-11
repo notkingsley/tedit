@@ -4,6 +4,10 @@
 		"algorithm": "cpp",
 		"istream": "cpp",
 		"limits": "cpp",
-		"streambuf": "cpp"
+		"streambuf": "cpp",
+		"iosfwd": "cpp",
+		"fstream": "cpp",
+		"string_view": "cpp",
+		"cstring": "cpp"
 	}
 }
