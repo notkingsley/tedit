@@ -23,6 +23,10 @@ enum class CharType{
 	CTRL_BACKSPACE,
 	CTRL_DELETE,
 	CTRL_X,
+	HOME_KEY,
+	END_KEY,
+	PAGE_UP,
+	PAGE_DOWN,
 	SAVE,
 	EXIT,
 	DISCARD_SESSION,
@@ -48,8 +52,6 @@ public:
 	// render this line again
 	void render();
 
-	// return a reference to the underlying string
-	std::string& data();
 };
 
 class Document{
@@ -165,6 +167,18 @@ class Manager{
 
 	// completely delete the current line
 	void key_ctrl_x();
+
+	// move to the beginning of current line
+	void key_home();
+
+	// move to the end of the current line
+	void key_end();
+
+	// move to the beginning of the first
+	void key_page_up();
+
+	// move to the end of the last line
+	void key_page_down();
 
 	// update scurx and scury according to cur_line
 	// and curx and cury

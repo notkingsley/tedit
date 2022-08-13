@@ -94,6 +94,26 @@ std::pair<CharType, char> Manager::get_next()
 					}
 				}
 			}
+			else if(c == 70)
+			{
+				return {CharType::END_KEY, c};
+			}
+			else if(c == 72)
+			{
+				return {CharType::HOME_KEY, c};
+			}
+			else if(c == 53)
+			{
+				c = getchar();
+				if(c == 126)
+					return {CharType::PAGE_UP, c};
+			}
+			else if(c == 54)
+			{
+				c = getchar();
+				if(c = 126)
+					return {CharType::PAGE_DOWN, c};
+			}
 		}
 		else if (c == 115)
 		{ // alt-s or esc + s
@@ -188,6 +208,26 @@ void Manager::listen()
 			case CharType::CTRL_DELETE:
 			{
 				key_ctrl_delete();
+				break;
+			}
+			case CharType::HOME_KEY:
+			{
+				key_home();
+				break;
+			}
+			case CharType::END_KEY:
+			{
+				key_end();
+				break;
+			}
+			case CharType::PAGE_UP:
+			{
+				key_page_up();
+				break;
+			}
+			case CharType::PAGE_DOWN:
+			{
+				key_page_down();
 				break;
 			}
 			case CharType::CTRL_X:
@@ -437,6 +477,30 @@ void Manager::key_ctrl_x()
 	curx = 0;
 	key_delete();
 	curx = std::min(hold, (*cur_line)->length());
+}
+
+void Manager::key_home()
+{
+	curx = 0;
+}
+
+void Manager::key_end()
+{
+	curx = (*cur_line)->length();
+}
+
+void Manager::key_page_down()
+{
+	cur_line = doc.lines.end();
+	--cur_line;
+	curx = (*cur_line)->length();
+	cury = doc.lines.size() - 1;
+}
+
+void Manager::key_page_up()
+{
+	cur_line = doc.lines.begin();
+	cury = curx = 0;
 }
 
 inline void Manager::update_scur()

@@ -19,7 +19,3 @@ void Line::render()
 	std::cout.flush();
 }
 
-std::string& Line::data()
-{
-	return *this;
-}
