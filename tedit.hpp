@@ -5,6 +5,7 @@
 #include <fstream>
 #include <cstring>
 #include <algorithm>
+#include <map>
 #include <termios.h>
 
 #ifndef TEDIT_HPP

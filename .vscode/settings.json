@@ -8,6 +8,8 @@
 		"iosfwd": "cpp",
 		"fstream": "cpp",
 		"string_view": "cpp",
-		"cstring": "cpp"
+		"cstring": "cpp",
+		"hash_map": "cpp",
+		"*.tcc": "cpp"
 	}
 }
