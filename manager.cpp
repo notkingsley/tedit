@@ -268,6 +268,13 @@ void Manager::save()
 void Manager::key_printable(char c)
 {
 	doc.insert(c, curx++);
+
+	if(c == '[' || c == '{')
+		doc.insert(c + 2, curx);
+	else if(c == '(')
+		doc.insert(')', curx);
+	else if(c == '\'' || c == '"')
+		doc.insert(c, curx);
 }
 
 void Manager::key_arrow(char c)
@@ -475,7 +482,10 @@ void Manager::key_ctrl_x()
 	(*cur_line)->erase();
 	size_t hold = curx;
 	curx = 0;
-	key_delete();
+	if((*cur_line) != doc.lines.back())
+		key_delete();
+	else
+		key_backspace();
 	curx = std::min(hold, (*cur_line)->length());
 }
 
