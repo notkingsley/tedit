@@ -207,4 +207,8 @@ public:
 // move to position (x, y) on terminal screen
 int move_to(int y, int x);
 
+// initialize syntax coloring with a given 
+// filename (extension is deduced)
+void initialize_syntax_coloring(std::string filename);
+
 #endif

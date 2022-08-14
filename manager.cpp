@@ -160,6 +160,7 @@ void Manager::listen()
 {
 	// clear the screen
 	printf("%c[%dJ", 0x1B, 2);
+	initialize_syntax_coloring(name);
 	doc.render();
 	move_to(scury, scurx);
 
@@ -362,7 +363,7 @@ void Manager::key_enter()
 
 	// evaluate indent level
 	size_t indent = (*cur_line)->find_first_not_of('\t');
-	if(indent == 18446744073709551615ul)
+	if(indent == (*cur_line)->npos)
 		indent = 0;
 	if((*cur_line)->back() == '{')
 		++indent;
