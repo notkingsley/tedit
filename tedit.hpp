@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <map>
 #include <termios.h>
+#include <sys/ioctl.h>
 
 #ifndef TEDIT_HPP
 #define TEDIT_HPP 1
@@ -36,6 +37,7 @@ enum class CharType{
 
 class Document;
 class Manager;
+class Renderer;
 
 class Line : public std::string{
 	// where this line is
@@ -43,6 +45,7 @@ class Line : public std::string{
 
 	friend Document;
 	friend Manager;
+	friend Renderer;
 public:
 	// create a new line
 	Line(std::string str, size_t pos);
@@ -63,6 +66,7 @@ class Document{
 	std::__cxx11::list<Line *>::iterator cur_line;
 
 	friend Manager;
+	friend Renderer;
 public:
 	// create a document object for text editing
 	Document();
@@ -204,11 +208,40 @@ public:
 	void listen();
 };
 
-// move to position (x, y) on terminal screen
-int move_to(int y, int x);
+class Renderer{
+public:
+	// iterator to the first line allowed to be on screen
+	static std::list<Line*>::iterator start;
 
-// initialize syntax coloring with a given 
-// filename (extension is deduced)
-void initialize_syntax_coloring(std::string filename);
+	// height of the terminal
+	static int row_size;
+
+	//width of the terminal
+	static int col_size;
+
+	// pointer to active document
+	static Document* doc;
+
+	// initialize the renderer with docunent
+	static void initialise_renderer(Document* doc);
+
+	// print all lines of document
+	// considering size of screen
+	static void render_doc();
+
+	// re-render a line according to its
+	// position and screen variables
+	static void render_line(Line* lp);
+
+	// move to position (x, y) on terminal screen
+	static void move_to(int y, int x);
+
+	// initialize syntax coloring with a given 
+	// filename (extension is deduced)
+	static void initialize_syntax_coloring(std::string filename);
+};
+
+// move to position (x, y) on terminal screen
+void move_to(int y, int x);
 
 #endif

@@ -32,8 +32,7 @@ Document::~Document()
 
 void Document::render()
 {
-	for(Line* l: lines)
-		l->render();
+	Renderer::render_doc();
 }
 
 void Document::add_new_line(std::string str, int pos)
@@ -72,7 +71,7 @@ void Document::read_file(std::fstream& fs)
 void Document::save(std::fstream& fs)
 {
 	for(Line* l: lines){
-		fs << l;
+		fs << *l;
 		if(l != lines.back())
 			fs << '\n';
 	}

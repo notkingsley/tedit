@@ -8,6 +8,9 @@ Manager::Manager() :
 	scurx = curx = 0;
 	scury = cury = 0;
 
+	Renderer::initialise_renderer(&doc);
+	Renderer::initialize_syntax_coloring(name);
+
 	// save old terminal state, then disable buffering
 	// and echo
 	struct termios newt;
@@ -26,6 +29,9 @@ Manager::Manager(const char* filename) :
 	char command[strlen(filename) + 10] = "touch ";
 	strcat(command, filename);
 	system(command);
+
+	Renderer::initialise_renderer(&doc);
+	Renderer::initialize_syntax_coloring(name);
 
 	doc.render();
 	scury = cury = (*cur_line)->position - 1;
@@ -160,7 +166,6 @@ void Manager::listen()
 {
 	// clear the screen
 	printf("%c[%dJ", 0x1B, 2);
-	initialize_syntax_coloring(name);
 	doc.render();
 	move_to(scury, scurx);
 
