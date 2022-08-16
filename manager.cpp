@@ -328,6 +328,7 @@ void Manager::key_backspace()
 	}
 	else if(cur_line != doc.lines.begin())
 	{											// delete from prev line
+		Renderer::warn(cur_line);
 		std::string hold = **cur_line;
 		doc.remove_line(cur_line);
 		--cury;
@@ -335,9 +336,7 @@ void Manager::key_backspace()
 		**cur_line += hold;
 		(*cur_line)->render();
 
-		// clean last line
-		move_to(doc.lines.size(), 0);
-		printf("%c[%dK", 0x1B, 2);
+		Renderer::clean_last_line();
 	}
 }
 
@@ -353,9 +352,7 @@ void Manager::key_delete()
 		**cur_line += **next;
 		doc.remove_line(next);
 
-		// clean last line
-		move_to(doc.lines.size(), 0);
-		printf("%c[%dK", 0x1B, 2);
+		Renderer::clean_last_line();
 	}
 }
 

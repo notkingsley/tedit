@@ -209,6 +209,9 @@ public:
 };
 
 class Renderer{
+	// internal function to actually goto a line
+	static void move_to_line(int y, int x);
+
 public:
 	// iterator to the first line allowed to be on screen
 	static std::list<Line*>::iterator start;
@@ -239,6 +242,13 @@ public:
 	// initialize syntax coloring with a given 
 	// filename (extension is deduced)
 	static void initialize_syntax_coloring(std::string filename);
+
+	// clear the last line after possible doc shrinking
+	static void clean_last_line();
+
+	// warn the renderer that this iterator is about
+	// to be invalidated
+	static void warn(std::list<Line*>::iterator cur_line);
 };
 
 // move to position (x, y) on terminal screen

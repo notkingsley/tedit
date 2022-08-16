@@ -211,6 +211,11 @@ std::list<Line*>::iterator Renderer::start;
 int Renderer::row_size = 0;
 int Renderer::col_size = 0;
 
+void Renderer::move_to_line(int y, int x)
+{
+	printf("%c[%ld;%dH", 0x1B, y + 1 - ((*start)->position - 1), x + 1);
+}
+
 void Renderer::initialise_renderer(Document* dp)
 {
 	if(not dp)
@@ -224,13 +229,20 @@ void Renderer::initialise_renderer(Document* dp)
 
 void Renderer::render_doc()
 {
-	for(Line* l: doc->lines)
-		l->render();
+	int i = 0;
+	for(auto iter = start; iter != doc->lines.end() && i != row_size; ++iter, ++i)
+		render_line(*iter);
 }
 
 void Renderer::render_line(Line* lp)
 {
-	move_to(lp->position - 1, 0);
+	if(lp->position < (*start)->position)
+		return;
+	if(lp->position > (*start)->position + (row_size - 1))
+		return;
+	if(abs(lp->position - (*doc->cur_line)->position) >= row_size)
+		return;
+	move_to_line(lp->position - 1, 0);
 	std::cout << "\u001b[2K";
 	render_alpha(*lp, 0);
 	std::cout.flush();
@@ -238,7 +250,26 @@ void Renderer::render_line(Line* lp)
 
 void Renderer::move_to(int y, int x)
 {
-	printf("%c[%d;%dH", 0x1B, y + 1, x + 1);
+	if((*doc->cur_line)->position < (*start)->position){
+		start = doc->cur_line;
+		render_doc();
+	}
+	else if((*doc->cur_line)->position > (*start)->position + row_size - 1){
+		std::advance(start, 
+			(*doc->cur_line)->position - (row_size - 1) - (*start)->position);
+		render_doc();
+	}
+
+	bool shifted = false;
+	while(start != doc->lines.begin() and 
+	doc->lines.back()->position - (*start)->position < row_size - 1){
+		--start;
+		shifted = true;
+	}
+	if(shifted)
+		render_doc();
+
+	move_to_line(y, x);
 }
 
 void Renderer::initialize_syntax_coloring(std::string filename)
@@ -255,4 +286,22 @@ void Renderer::initialize_syntax_coloring(std::string filename)
 		colors = colors_c;
 	else if(ext == "py")
 		colors = colors_python;
+}
+
+void Renderer::clean_last_line()
+{
+	if(doc->lines.back()->position - (*start)->position >= row_size)
+		return;
+	move_to_line(doc->lines.size(), 0);
+	printf("%c[%dK", 0x1B, 2);
+}
+
+void Renderer::warn(std::list<Line*>::iterator cur_line)
+{
+	if(cur_line != start)
+		return;
+	if(start == doc->lines.begin())
+		++start;
+	else
+		--start;
 }
