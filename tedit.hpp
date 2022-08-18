@@ -249,6 +249,12 @@ public:
 	// warn the renderer that this iterator is about
 	// to be invalidated
 	static void warn(std::list<Line*>::iterator cur_line);
+
+	// shift the whole page up by one line
+	static void shift_page_up();
+
+	// shift the whole page down by one line
+	static void shift_page_down();
 };
 
 // move to position (x, y) on terminal screen

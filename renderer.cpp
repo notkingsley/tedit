@@ -305,3 +305,19 @@ void Renderer::warn(std::list<Line*>::iterator cur_line)
 	else
 		--start;
 }
+
+void Renderer::shift_page_up()
+{
+	if(doc->lines.back()->position - (*start)->position > row_size){
+		++start;
+		render_doc();
+	}
+}
+
+void Renderer::shift_page_down()
+{
+	if(start != doc->lines.begin()){
+		--start;
+		render_doc();
+	}
+}

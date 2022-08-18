@@ -275,12 +275,8 @@ void Manager::key_printable(char c)
 {
 	doc.insert(c, curx++);
 
-	if(c == '[' || c == '{')
-		doc.insert(c + 2, curx);
-	else if(c == '(')
-		doc.insert(')', curx);
-	else if(c == '\'' || c == '"')
-		doc.insert(c, curx);
+	if(c == '{')
+		doc.insert('}', curx);
 }
 
 void Manager::key_arrow(char c)
@@ -370,9 +366,19 @@ void Manager::key_enter()
 	if((*cur_line)->back() == '{')
 		++indent;
 
+	Line* last = *cur_line;
 	// adjust curx and cur_line
 	++cur_line;
 	curx = indent;
+
+	// {} case
+	if(**cur_line == "}" and last->back() == '{'){
+		(*cur_line)->erase();
+		std::string str;
+		str.insert(0, indent - 1, '\t');
+		str += '}';
+		doc.add_new_line(str, cury + 1);
+	}
 
 	// insert indent and render
 	(*cur_line)->insert(0, indent, '\t');
@@ -382,6 +388,16 @@ void Manager::key_enter()
 void Manager::key_ctrl_arrow(char c)
 {
 	switch(c){
+		case 'A':
+		{
+			Renderer::shift_page_down();
+			break;
+		}
+		case 'B':
+		{
+			Renderer::shift_page_up();
+			break;
+		}
 		case 'C':
 		{
 			// end of line?
