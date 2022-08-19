@@ -275,8 +275,18 @@ void Manager::key_printable(char c)
 {
 	doc.insert(c, curx++);
 
-	if(c == '{')
-		doc.insert('}', curx);
+	if(c == '[' || c == '{')
+		doc.insert(c + 2, curx);
+	else if(c == '(')
+		doc.insert(')', curx);
+	else if((c == ']' || c == ')' || c == '}') && (**cur_line)[curx] == c)
+		doc.del_char(curx);
+	else if(c == '\'' || c == '"'){
+		if((**cur_line)[curx] == c)
+			doc.del_char(curx);
+		else
+			doc.insert(c, curx);
+	}
 }
 
 void Manager::key_arrow(char c)
