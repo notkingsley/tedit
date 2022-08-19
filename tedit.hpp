@@ -30,6 +30,8 @@ enum class CharType{
 	END_KEY,
 	PAGE_UP,
 	PAGE_DOWN,
+	ALT_ARROW,
+	COMMENT_LINE,
 	SAVE,
 	EXIT,
 	DISCARD_SESSION,
@@ -185,6 +187,12 @@ class Manager{
 
 	// move to the end of the last line
 	void key_page_down();
+
+	// alt-arrow keys, move a line up or down
+	void key_alt_arrow(char c);
+
+	// comment or uncomment out cur_line
+	void key_comment_line();
 
 	// update scurx and scury according to cur_line
 	// and curx and cury

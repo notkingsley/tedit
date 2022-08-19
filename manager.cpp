@@ -88,7 +88,7 @@ std::pair<CharType, char> Manager::get_next()
 				return {CharType::ARROW_KEY, c};
 			}
 			else if(c == 49)
-			{	// possible ctrl_arrow
+			{	// possible ctrl_arrow, or alt_arrow
 				c = getchar();
 				if(c == 59){
 					c = getchar();
@@ -96,6 +96,12 @@ std::pair<CharType, char> Manager::get_next()
 						c = getchar();
 						if(c >= 65 && c <= 68){
 							return {CharType::CTRL_ARROW, c};
+						}
+					}
+					else if(c == 51){
+						c = getchar();
+						if(c >= 65 && c <= 68){
+							return {CharType::ALT_ARROW, c};
 						}
 					}
 				}
@@ -157,6 +163,10 @@ std::pair<CharType, char> Manager::get_next()
 	else if(c == 24)
 	{
 		return {CharType::CTRL_X, c};
+	}
+	else if(c == 31)
+	{
+		return {CharType::COMMENT_LINE, c};
 	}
 	return {CharType::INVALID, c};
 }
@@ -240,6 +250,16 @@ void Manager::listen()
 			case CharType::CTRL_X:
 			{
 				key_ctrl_x();
+				break;
+			}
+			case CharType::ALT_ARROW:
+			{
+				key_alt_arrow(act.second);
+				break;
+			}
+			case CharType::COMMENT_LINE:
+			{
+				key_comment_line();
 				break;
 			}
 			case CharType::SAVE:
@@ -545,9 +565,57 @@ void Manager::key_page_up()
 	cury = curx = 0;
 }
 
+void Manager::key_alt_arrow(char c)
+{
+	switch(c){
+		case 'A':
+		{
+			if(cur_line == doc.lines.begin())
+				return;
+			auto prev = cur_line--;
+			--cury;
+			std::string hold = **cur_line;
+			(*cur_line)->assign(**prev);
+			(*prev)->assign(hold);
+			doc.render();
+			break;
+		}
+		case 'B':
+		{
+			if(*cur_line == doc.lines.back())
+				return;
+			auto next = cur_line++;
+			++cury;
+			std::string hold = **cur_line;
+			(*cur_line)->assign(**next);
+			(*next)->assign(hold);
+			doc.render();
+			break;
+		}
+	}
+}
+
+void Manager::key_comment_line()
+{
+	size_t start = 0;
+	while(start < (*cur_line)->length() and isblank((**cur_line)[start]))
+		++start;
+	if(start == (*cur_line)->length())
+		return;
+
+	if((**cur_line)[start] == '/' and (**cur_line)[start] == '/'){
+		(*cur_line)->erase(start, 2);
+		if((**cur_line)[start] == ' ')
+			(*cur_line)->erase(start, 1);
+	}
+	else{
+		(*cur_line)->insert(start, "// ");
+	}
+	(*cur_line)->render();
+}
+
 inline void Manager::update_scur()
 {
-
 	// offset from last tab margin
 	// and total gaps incurred by \t s
 	size_t offset = 0, total_gap = 0;
