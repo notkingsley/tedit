@@ -8,6 +8,7 @@
 #include <map>
 #include <termios.h>
 #include <sys/ioctl.h>
+#include <signal.h>
 
 #ifndef TEDIT_HPP
 #define TEDIT_HPP 1
@@ -255,6 +256,9 @@ public:
 
 	// shift the whole page down by one line
 	static void shift_page_down();
+
+	// receive window resize signal and update variables
+	static void update_terminal_size(int sig);
 };
 
 // move to position (x, y) on terminal screen

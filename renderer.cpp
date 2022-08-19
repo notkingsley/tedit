@@ -321,3 +321,13 @@ void Renderer::shift_page_down()
 		render_doc();
 	}
 }
+
+void Renderer::update_terminal_size(int sig)
+{
+	if(sig != SIGWINCH)
+		return;
+	int res[2];
+	get_win_size(res);
+	row_size = res[0], col_size = res[1];
+	move_to((*doc->cur_line)->position - 1, 0);
+}

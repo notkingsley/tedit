@@ -166,6 +166,7 @@ void Manager::listen()
 {
 	// clear the screen
 	printf("%c[%dJ", 0x1B, 2);
+	signal(SIGWINCH, Renderer::update_terminal_size);
 	doc.render();
 	move_to(scury, scurx);
 
