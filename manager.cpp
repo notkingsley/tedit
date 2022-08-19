@@ -374,6 +374,8 @@ void Manager::key_enter()
 	size_t indent = (*cur_line)->find_first_not_of('\t');
 	if(indent == (*cur_line)->npos)
 		indent = 0;
+	if(std::count((*cur_line)->begin(), (*cur_line)->end(), '\t') == 
+		(*cur_line)->length()) indent = (*cur_line)->length();
 	if((*cur_line)->back() == '{')
 		++indent;
 
