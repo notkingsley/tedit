@@ -139,6 +139,10 @@ std::pair<CharType, char> Manager::get_next()
 		{	// alt-d or esc-d or ctrl+del
 			return {CharType::CTRL_DELETE, c};
 		}
+		else if(c == 113)
+		{	// alt-q
+			return {CharType::EXIT, c};
+		}
 	}
 	else if (c == 127)
 	{ // backspace
