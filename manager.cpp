@@ -355,6 +355,18 @@ void Manager::key_arrow(char c)
 void Manager::key_backspace()
 {
 	if(curx > 0){								// same line
+		if(curx < (*cur_line)->length())
+			if(((**cur_line)[curx - 1] == '[' or (**cur_line)[curx - 1] == '{')
+				and (**cur_line)[curx] == (**cur_line)[curx - 1] + 2)
+				doc.del_char(curx);
+
+			else if(((**cur_line)[curx - 1] == '\'' or (**cur_line)[curx - 1] == '"')
+				and (**cur_line)[curx] == (**cur_line)[curx - 1])
+				doc.del_char(curx);
+
+			else if((**cur_line)[curx - 1] == '(' and (**cur_line)[curx] == ')')
+				doc.del_char(curx);
+				
 		doc.backspace(curx--);
 	}
 	else if(cur_line != doc.lines.begin())
