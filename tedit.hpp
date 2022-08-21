@@ -1,3 +1,6 @@
+#ifndef TEDIT_HPP
+#define TEDIT_HPP 1
+
 #include <vector>
 #include <list>
 #include <iostream>
@@ -6,12 +9,19 @@
 #include <cstring>
 #include <algorithm>
 #include <map>
-#include <termios.h>
-#include <sys/ioctl.h>
 #include <signal.h>
 
-#ifndef TEDIT_HPP
-#define TEDIT_HPP 1
+#ifndef _WIN32
+
+#include <termios.h>
+#include <sys/ioctl.h>
+
+#else
+
+#include <windows.h>
+#include <conio.h>
+
+#endif
 
 // represent the kind of action 
 // a sequence of input characters
@@ -131,12 +141,27 @@ class Manager{
 	// scurx is curx if no tabs
 	size_t scurx, scury;
 
+#	ifndef _WIN32
 	// old state of terminal
 	termios oldt;
+
+#	else
+	// old state of terminal
+	HANDLE stdOutHandle;
+	HANDLE stdInHandle;
+	DWORD dwOriginalOutMode;
+	DWORD dwOriginalInMode;
+#	endif
 
 	// reference to iterator at current
 	// line of document
 	std::__cxx11::list<Line *>::iterator& cur_line;
+
+	// save old terminal state, disable buffering and echo
+	void init_screen();
+
+	// restore old terminal state
+	void end_screen();
 
 	// save contents of document to file
 	void save();
@@ -265,8 +290,11 @@ public:
 	// shift the whole page down by one line
 	static void shift_page_down();
 
+#	ifndef _WIN32
 	// receive window resize signal and update variables
 	static void update_terminal_size(int sig);
+
+#	endif	// _WIN32
 };
 
 // move to position (x, y) on terminal screen

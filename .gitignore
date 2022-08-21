@@ -1,3 +1,7 @@
 .vscode/launch.json
 .vscode/tasks.json
 .vscode
+raw_win.exe
+raw_win.cpp
+raw_test
+raw_test.cpp

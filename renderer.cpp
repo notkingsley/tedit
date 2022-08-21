@@ -21,6 +21,7 @@ void begin_render_default(Line* lp);
 void (*begin_render)(Line* lp);
 
 
+#ifndef _WIN32
 
 static void get_win_size(int* res)
 {
@@ -28,6 +29,18 @@ static void get_win_size(int* res)
 	ioctl(0, TIOCGWINSZ, &w);
 	res[0] = w.ws_row, res[1] = w.ws_col;
 }
+
+#else
+
+static void get_win_size(int* res)
+{
+	CONSOLE_SCREEN_BUFFER_INFO info;
+	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info);
+	res[0] = info.srWindow.Bottom - info.srWindow.Top + 1;
+	res[1] = info.srWindow.Right - info.srWindow.Left + 1;
+}
+
+#endif
 
 
 Document* Renderer::doc = nullptr;
@@ -65,7 +78,7 @@ void Renderer::render_line(Line* lp)
 		return;
 	if(lp->position > (*start)->position + (row_size - 1))
 		return;
-	if(abs(lp->position - (*doc->cur_line)->position) >= row_size)
+	if(abs((int)(lp->position - (*doc->cur_line)->position)) >= row_size)
 		return;
 	move_to_line(lp->position - 1, 0);
 	std::cout << "\u001b[2K";
@@ -154,6 +167,8 @@ void Renderer::shift_page_down()
 	}
 }
 
+#ifndef _WIN32
+
 void Renderer::update_terminal_size(int sig)
 {
 	if(sig != SIGWINCH)
@@ -163,3 +178,5 @@ void Renderer::update_terminal_size(int sig)
 	row_size = res[0], col_size = res[1];
 	move_to((*doc->cur_line)->position - 1, 0);
 }
+
+#endif		// _WIN32
