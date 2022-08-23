@@ -4,11 +4,7 @@ Manager::Manager() :
 	name("untitled.txt"),
 	doc(Document()), cur_line(doc.cur_line)
 {
-#	ifndef _WIN32
-	system("touch untitled.txt");
-#	else
-	system("copy NUL untitled.txt");
-#	endif
+	valid_filename = false;
 	scurx = curx = 0;
 	scury = cury = 0;
 
@@ -19,16 +15,18 @@ Manager::Manager() :
 }
 
 Manager::Manager(const char* filename) :
-	name(filename), file(filename), 
+	file(filename), 
 	doc(file), cur_line(doc.cur_line)
 {
 	file.close();
+	strcpy(name, filename);
+	valid_filename = true;
 
-#	ifndef _WIN32
+	#ifndef _WIN32
 	char command[strlen(filename) + 10] = "touch ";
-#	else
+	#else
 	char command[strlen(filename) + 10] = "copy NUL ";
-#	endif
+	#endif
 	strcat(command, filename);
 	system(command);
 
@@ -161,6 +159,10 @@ std::pair<CharType, char> Manager::get_next()
 		{	// alt-q
 			return {CharType::EXIT, c};
 		}
+		else if(c == 83)
+		{	// alt-shift-s
+			return {CharType::SAVE_AS, c};
+		}
 	}
 	else if (c == 127)
 	{ // backspace
@@ -290,6 +292,12 @@ void Manager::listen()
 				save();
 				break;
 			}
+			case CharType::SAVE_AS:
+			{
+				valid_filename = false;
+				save();
+				break;
+			}
 			case CharType::DISCARD_SESSION:
 			{
 				loop = false;
@@ -310,6 +318,39 @@ void Manager::listen()
 
 void Manager::save()
 {
+	if(not valid_filename){
+		// clear screen
+		printf("%c[%dJ", 0x1B, 2);
+		printf("%c[%d;%dH", 0x1B, 1, 1);
+
+		#ifndef _WIN32
+		int (*get)(void) = getchar;
+		#else
+		int (*get)(void) = getch;
+		#endif
+
+		std::string str;
+		char c;
+		do{
+			std::cout << "\rEnter name to save as: " << str;
+			std::cout.flush();
+			c = get();
+			if(isalnum(c) || ispunct(c))
+				str += c;
+			else if((c == 127 or c == 8) and not str.empty())
+				str.pop_back();
+			#ifndef _WIN32
+			else if(c == 27)
+				return doc.render();
+			#endif
+		}while(c != '\n' and c != 13);
+
+		strcpy(name, str.c_str());
+
+		valid_filename = true;
+		Renderer::initialize_syntax_coloring(name);
+		doc.render();
+	}
 	file = std::fstream(name, std::ios::out | std::ios::trunc);
 	doc.save(file);
 	file.close();

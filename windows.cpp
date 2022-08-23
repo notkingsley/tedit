@@ -137,10 +137,12 @@ std::pair<CharType, char> Manager::get_next()
 			return {CharType::PRINTABLE, c};
 		case 23:
 			return {CharType::CTRL_BACKSPACE, c};
-		case 24:
+		case 24:	// ctrl+x
 			return {CharType::CTRL_X, c};
-		case 31:
+		case 31:	// ctrl+/
 			return {CharType::COMMENT_LINE, c};
+		case 20:	//ctrl+t
+			return {CharType::SAVE_AS, c};
 		default:
 			return {CharType::INVALID, c};
 	}

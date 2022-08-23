@@ -43,6 +43,7 @@ enum class CharType{
 	ALT_ARROW,
 	COMMENT_LINE,
 	SAVE,
+	SAVE_AS,
 	EXIT,
 	DISCARD_SESSION,
 	INVALID
@@ -128,7 +129,10 @@ class Manager{
 	std::fstream file;
 
 	// name of file
-	const char* name;
+	char name[256];
+
+	// whether or not the name has been actually supplied
+	bool valid_filename;
 
 	// document representing current open file
 	Document doc;

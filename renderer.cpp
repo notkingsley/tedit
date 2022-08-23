@@ -88,23 +88,24 @@ void Renderer::render_line(Line* lp)
 
 void Renderer::move_to(int y, int x)
 {
+	bool render = false;
 	if((*doc->cur_line)->position < (*start)->position){
 		start = doc->cur_line;
-		render_doc();
+		render = true;
 	}
 	else if((*doc->cur_line)->position > (*start)->position + row_size - 1){
 		std::advance(start, 
 			(*doc->cur_line)->position - (row_size - 1) - (*start)->position);
-		render_doc();
+		render = true;
 	}
 
-	bool shifted = false;
 	while(start != doc->lines.begin() and 
 	doc->lines.back()->position - (*start)->position < row_size - 1){
 		--start;
-		shifted = true;
+		render = true;
 	}
-	if(shifted)
+	
+	if(render)
 		render_doc();
 
 	move_to_line(y, x);
