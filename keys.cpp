@@ -146,11 +146,15 @@ void Manager::key_ctrl_arrow(char c)
 		case 'A':
 		{
 			Renderer::shift_page_down();
+			if(not Renderer::is_on_screen(*cur_line))
+				key_arrow(c);
 			break;
 		}
 		case 'B':
 		{
 			Renderer::shift_page_up();
+			if(not Renderer::is_on_screen(*cur_line))
+				key_arrow(c);
 			break;
 		}
 		case 'C':

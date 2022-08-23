@@ -104,7 +104,7 @@ void Renderer::move_to(int y, int x)
 		--start;
 		render = true;
 	}
-	
+
 	if(render)
 		render_doc();
 
@@ -154,7 +154,7 @@ void Renderer::warn(std::list<Line*>::iterator cur_line)
 
 void Renderer::shift_page_up()
 {
-	if(doc->lines.back()->position - (*start)->position > row_size){
+	if(doc->lines.back()->position - (*start)->position >= row_size){
 		++start;
 		render_doc();
 	}
@@ -166,6 +166,11 @@ void Renderer::shift_page_down()
 		--start;
 		render_doc();
 	}
+}
+
+bool Renderer::is_on_screen(Line* lp)
+{
+	return lp->position - (*start)->position < row_size;
 }
 
 #ifndef _WIN32

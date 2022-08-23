@@ -294,6 +294,9 @@ public:
 	// shift the whole page down by one line
 	static void shift_page_down();
 
+	// return true if lp is currently rendered on screen
+	static bool is_on_screen(Line* lp);
+
 #	ifndef _WIN32
 	// receive window resize signal and update variables
 	static void update_terminal_size(int sig);
