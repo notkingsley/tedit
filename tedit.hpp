@@ -44,6 +44,7 @@ enum class CharType{
 	COMMENT_LINE,
 	SAVE,
 	SAVE_AS,
+	SHOW_MANUAL,
 	EXIT,
 	DISCARD_SESSION,
 	INVALID
@@ -161,6 +162,9 @@ class Manager{
 	// line of document
 	std::__cxx11::list<Line *>::iterator& cur_line;
 
+	// message to display as key_mapping manual
+	static std::string manual_message;
+
 	// save old terminal state, disable buffering and echo
 	void init_screen();
 
@@ -222,6 +226,9 @@ class Manager{
 
 	// comment or uncomment out cur_line
 	void key_comment_line();
+
+	// clean the screen and show active keyboard shortcuts
+	void key_show_manual();
 
 	// update scurx and scury according to cur_line
 	// and curx and cury

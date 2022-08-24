@@ -1,7 +1,7 @@
 #include "tedit.hpp"
 
 /* File containing definitions specific to 
- * Windows systems
+ * Windows system's screens and keyboard
  */
 
 #ifdef _WIN32
@@ -141,11 +141,39 @@ std::pair<CharType, char> Manager::get_next()
 			return {CharType::CTRL_X, c};
 		case 31:	// ctrl+/
 			return {CharType::COMMENT_LINE, c};
-		case 20:	//ctrl+t
+		case 20:	// ctrl+t
 			return {CharType::SAVE_AS, c};
+		case 7:		// ctrl+g
+			return {CharType::SHOW_MANUAL, c};
 		default:
 			return {CharType::INVALID, c};
 	}
 }
+
+std::string Manager::manual_message = {
+R"(Hello! Welcome to the Tedit Manual page. Press CTRL+G at any time to show this manual.
+
+Tedit is a command-line text editor that allows you to quickly write or edit short programs on
+the go without opening any heavy editor application.
+
+It comes with all the basic functionalities for a text editor.
+Below are the shortcuts/key mappings supported by your distribution
+of Tedit not including the basic keys of the keyboard:
+
+CTRL + G ->                  			show this manual page
+CTRL + S ->                  			save the contents to file
+CTRL + Q ->                  			close the editor without saving
+CTRL + B ->                  			save and close the editor
+CTRL + T ->                  			save contents to another file name
+CTRL + / ->                  			comment out this line( C/C++ )
+ALT + ARROW KEY UP, DOWN ->  			move the current line up or down
+CTRL + X ->                  			delete line
+CTRL + ARROW KEY UP, DOWN -> 			move the page up or down
+HOME / END KEY ->            			jump to the beginning/ end of the line
+PAGE UP / DOWN ->            			jump to the beginning/ end of the document
+
+Press enter key to continue.
+)"
+};
 
 #endif

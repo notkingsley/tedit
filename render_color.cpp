@@ -294,10 +294,14 @@ void begin_render_cpp(Line* lp)
 		if(end == lp->length())
 			return;
 		
-		if((*lp)[end] == '/' and lp->length() > end + 1 and
-			((*lp)[end + 1] == '/') or (*lp)[end] == '*'){
-			std::cout << GREY << lp->substr(end) << RESET;
-			return;
+		if((*lp)[end] == '/'){
+			if(lp->length() > end + 1 and ((*lp)[end + 1] == '/' or (*lp)[end + 1] == '*')){
+				std::cout << GREY << lp->substr(end) << RESET;
+				return;
+			}
+			std::cout << (*lp)[end];
+			start = end + 1;
+			continue;
 		}
 
 		if(is_bracket((*lp)[end])){

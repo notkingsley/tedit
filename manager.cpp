@@ -22,14 +22,6 @@ Manager::Manager(const char* filename) :
 	strcpy(name, filename);
 	valid_filename = true;
 
-	#ifndef _WIN32
-	char command[strlen(filename) + 10] = "touch ";
-	#else
-	char command[strlen(filename) + 10] = "copy NUL ";
-	#endif
-	strcat(command, filename);
-	system(command);
-
 	Renderer::initialise_renderer(&doc);
 	Renderer::initialize_syntax_coloring(name);
 
@@ -47,156 +39,6 @@ Manager::~Manager()
 {
 	end_screen();
 }
-
-
-#ifndef _WIN32
-
-void Manager::init_screen()
-{
-	// save old terminal state, then disable buffering
-	// and echo
-	struct termios newt;
-	tcgetattr(0, &oldt);
-	newt = oldt;
-	newt.c_lflag &= ~(ICANON | ECHO);
-	tcsetattr(0, TCSANOW, &newt);
-	
-	signal(SIGWINCH, Renderer::update_terminal_size);
-}
-
-void Manager::end_screen()
-{
-	tcsetattr(0, TCSANOW, &oldt);
-}
-
-std::pair<CharType, char> Manager::get_next()
-{
-	char c = getchar();
-	// match exactly
-	if (c >= 32 && c <= 126)
-	{
-		return {CharType::PRINTABLE, c};
-	}
-	else if (c == 27)
-	{ // escape key
-		c = getchar();
-		if (c == 91)
-		{ // arrow key or delete key, or ctrl_key
-			c = getchar();
-			if (c == 51)
-			{ // delete key or ctrl_delete, verify
-				c = getchar();
-				if (c == 126){
-					return {CharType::DELETE_KEY, c};
-				}
-				else if(c == 59)
-				{	// ctrl_delete possible, verify
-					c = getchar();
-					if(c == 53){
-						c = getchar();
-						if(c == 126)
-							return {CharType::CTRL_DELETE, c};
-					}
-				}
-			}
-			else if (c >= 65 && c <= 68)
-			{
-				return {CharType::ARROW_KEY, c};
-			}
-			else if(c == 49)
-			{	// possible ctrl_arrow, or alt_arrow
-				c = getchar();
-				if(c == 59){
-					c = getchar();
-					if(c == 53){
-						c = getchar();
-						if(c >= 65 && c <= 68){
-							return {CharType::CTRL_ARROW, c};
-						}
-					}
-					else if(c == 51){
-						c = getchar();
-						if(c >= 65 && c <= 68){
-							return {CharType::ALT_ARROW, c};
-						}
-					}
-				}
-			}
-			else if(c == 70)
-			{
-				return {CharType::END_KEY, c};
-			}
-			else if(c == 72)
-			{
-				return {CharType::HOME_KEY, c};
-			}
-			else if(c == 53)
-			{
-				c = getchar();
-				if(c == 126)
-					return {CharType::PAGE_UP, c};
-			}
-			else if(c == 54)
-			{
-				c = getchar();
-				if(c = 126)
-					return {CharType::PAGE_DOWN, c};
-			}
-		}
-		else if (c == 115)
-		{ // alt-s or esc + s
-			return {CharType::SAVE, c};
-		}
-		else if (c == 99)
-		{ // alt-c or esc + c
-			return {CharType::DISCARD_SESSION, c};
-		}
-		else if( c == 100)
-		{	// alt-d or esc-d or ctrl+del
-			return {CharType::CTRL_DELETE, c};
-		}
-		else if(c == 113)
-		{	// alt-q
-			return {CharType::EXIT, c};
-		}
-		else if(c == 83)
-		{	// alt-shift-s
-			return {CharType::SAVE_AS, c};
-		}
-	}
-	else if (c == 127)
-	{ // backspace
-		return {CharType::BACKSPACE, c};
-	}
-	else if (c == 10 || c == 13)
-	{ // enter key
-		return {CharType::ENTER_KEY, c};
-	}
-	else if (c == 9)
-	{ // tab
-		return {CharType::PRINTABLE, c};
-	}
-	else if (c == 2)
-	{	// ctrl-b
-		return {CharType::EXIT, c};
-	}
-	else if( c == 8 || c == 23)
-	{
-		return {CharType::CTRL_BACKSPACE, c};
-	}
-	else if(c == 24)
-	{
-		return {CharType::CTRL_X, c};
-	}
-	else if(c == 31)
-	{	// ctrl+/
-		return {CharType::COMMENT_LINE, c};
-	}
-	return {CharType::INVALID, c};
-}
-
-#endif
-
 
 void Manager::listen()
 {
@@ -285,6 +127,11 @@ void Manager::listen()
 			case CharType::COMMENT_LINE:
 			{
 				key_comment_line();
+				break;
+			}
+			case CharType::SHOW_MANUAL:
+			{
+				key_show_manual();
 				break;
 			}
 			case CharType::SAVE:

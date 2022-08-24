@@ -348,3 +348,14 @@ void Manager::key_comment_line()
 	}
 	(*cur_line)->render();
 }
+
+void Manager::key_show_manual()
+{
+	// clear the screen
+	printf("%c[%dJ", 0x1B, 2);
+	printf("%c[%d;%dH", 0x1B, 1, 1);
+
+	std::cout << manual_message;
+	while(getchar() != '\n');
+	doc.render();
+}
