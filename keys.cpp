@@ -329,24 +329,41 @@ void Manager::key_comment_line()
 		return;
 	ns.erase(0, last + 1);
 
-	if(ns != "cpp" and ns != "cp" and ns != "hpp" and ns != "c" and ns != "h")
-		return;
-
 	size_t start = 0;
+	// skip blanks
 	while(start < (*cur_line)->length() and isblank((**cur_line)[start]))
 		++start;
 	if(start == (*cur_line)->length())
 		return;
-
-	if((**cur_line)[start] == '/' and (**cur_line)[start] == '/'){
-		(*cur_line)->erase(start, 2);
-		if((**cur_line)[start] == ' ')
+		
+	if(ns == "py"){
+		if((**cur_line)[start] == '#'){
 			(*cur_line)->erase(start, 1);
+			--curx;
+			if((**cur_line)[start] == ' ')
+				(*cur_line)->erase(start, 1), --curx;
+		}
+		else{
+			(*cur_line)->insert(start, "# ");
+			curx += 2;
+		}
+		(*cur_line)->render();
 	}
-	else{
-		(*cur_line)->insert(start, "// ");
+	else if(ns == "cpp" or ns == "cp" or ns == "hpp" or ns == "c" or ns == "h")
+	{
+		if((**cur_line)[start] == '/' and (**cur_line).length() > start + 1 
+			and (**cur_line)[start + 1] == '/'){
+			(*cur_line)->erase(start, 2);
+			curx -= 2;
+			if((**cur_line)[start] == ' ')
+				(*cur_line)->erase(start, 1), --curx;
+		}
+		else{
+			(*cur_line)->insert(start, "// ");
+			curx += 3;
+		}
+		(*cur_line)->render();
 	}
-	(*cur_line)->render();
 }
 
 void Manager::key_show_manual()

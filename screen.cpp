@@ -175,7 +175,7 @@ ALT + C ->                   			close the editor without saving
 ALT + Q ->                   			save and close the editor
 CTRL + B ->                  			save and close the editor
 ALT + SHIFT + S ->           			save contents to another file name
-CTRL + / ->                  			comment out this line( C/C++ )
+CTRL + / ->                  			comment out this line( C/C++ and Python )
 ALT + ARROW KEY UP, DOWN ->  			move the current line up or down
 CTRL + X ->                  			delete line
 CTRL + ARROW KEY UP, DOWN -> 			move the page up or down

@@ -27,7 +27,6 @@ Manager::Manager(const char* filename) :
 
 	init_screen();
 
-	doc.render();
 	scury = cury = (*cur_line)->position - 1;
 	curx = (*cur_line)->length();
 	update_scur();
