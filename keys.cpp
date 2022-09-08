@@ -374,5 +374,8 @@ void Manager::key_show_manual()
 
 	std::cout << manual_message;
 	while(getchar() != '\n');
+
+	// clear screen again
+	printf("%c[%dJ", 0x1B, 2);
 	doc.render();
 }

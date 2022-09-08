@@ -5,6 +5,7 @@ static const char* PURPLE = "\u001b[38;5;93m";
 static const char* GREY = "\u001b[38;5;240m";
 static const char* BROWN = "\u001b[38;5;136m";
 static const char* RED = "\u001b[38;5;160m";
+static const char* RED_BG = "\u001b[48;5;160m";
 static const char* YELLOW = "\u001b[38;5;11m";
 static const char* PINK = "\u001b[38;5;200m";
 static const char* IDENTIFIER_COLOR = "\u001b[38;5;44m";
@@ -404,4 +405,14 @@ void begin_render_py(Line* lp)
 			continue;
 		}
 	}
+}
+
+void Manager::paint_here(char c, int y, int x)
+{
+	size_t tmpy = cury, tmpx = curx;
+	cury = y, curx = x;
+	update_scur();
+	Renderer::move_to(scury, scurx);
+	std::cout << RED << c << RESET;
+	cury = tmpy, curx = tmpx;
 }

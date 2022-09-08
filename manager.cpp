@@ -44,6 +44,7 @@ void Manager::listen()
 	// clear the screen
 	printf("%c[%dJ", 0x1B, 2);
 	doc.render();
+	paint_brackets();
 	move_to(scury, scurx);
 
 	// present action
@@ -156,6 +157,7 @@ void Manager::listen()
 				break;
 			}
 		}
+		paint_brackets();
 		update_scur();
 		move_to(scury, scurx);
 	}
@@ -220,4 +222,120 @@ inline void Manager::update_scur()
 
 	scurx = curx + total_gap;
 	scury = cury;
+}
+
+void Manager::paint_brackets()
+{
+	static Line* l1 = nullptr;
+	static Line* l2 = nullptr;
+	if(l1)
+		Renderer::render_line(l1);
+	if(l2)
+		Renderer::render_line(l2);
+
+	auto fit = [](char c){
+		return c == '(' or c == '[' or c == '{' or c == ')' or c == ']' or c == '}';
+	};
+
+	int start;
+	if(curx < (**cur_line).length() and fit((**cur_line)[curx]))
+		start = curx;
+	else if(curx > 0 and fit((**cur_line)[curx - 1]))
+		start = curx - 1;
+	else
+		return;
+
+	char c = (**cur_line)[start];
+	char comp;
+	std::list<Line*>::iterator l = cur_line;
+	switch(c){
+		case '{':
+			comp = '}';
+			break;
+		case '(':
+			comp = ')';
+			break;
+		case '[':
+			comp = ']';
+			break;
+		case '}':
+			comp = '{';
+			break;
+		case ')':
+			comp = '(';
+			break;
+		case ']':
+			comp = '[';
+			break;
+	}
+
+	int skips = 0;
+	int height = 0;
+	switch(c){
+		case '{':
+		case '(':
+		case '[':
+			paint_here(c, cury + height, start);
+			l1 = *l;
+			++start;
+			while(l != doc.lines.end() and Renderer::is_on_screen(*l)){
+				while(start < (**l).length() and (**l)[start] != comp and (**l)[start] != c)
+					++start;
+
+				if(start == (**l).length()){
+					++l;
+					++height;
+					start = 0;
+					continue;
+				}
+				if((**l)[start] == c){
+					++skips;
+					++start;
+					continue;
+				}
+				if(skips){
+					--skips;
+					++start;
+					continue;
+				}
+				paint_here(comp, cury + height, start);
+				l2 = *l;
+				return;
+			}
+			break;
+
+		case '}':
+		case ')':
+		case ']':
+			paint_here(c, cury + height, start);
+			l1 = *l;
+			--start;
+			while(Renderer::is_on_screen(*l)){
+				while(start >= 0 and (**l)[start] != comp and (**l)[start] != c)
+					--start;
+
+				if(start < 0){
+					if(l == doc.lines.begin())
+						return;
+					--l;
+					--height;
+					start = (**l).length() - 1;
+					continue;
+				}
+				if((**l)[start] == c){
+					++skips;
+					--start;
+					continue;
+				}
+				if(skips){
+					--skips;
+					--start;
+					continue;
+				}
+				paint_here(comp, cury + height, start);
+				l2 = *l;
+				return;
+			}
+			break;
+	}
 }

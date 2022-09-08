@@ -232,7 +232,14 @@ class Manager{
 
 	// update scurx and scury according to cur_line
 	// and curx and cury
-	inline void update_scur();
+	void update_scur();
+
+	// color proximal bracket and the complement
+	void paint_brackets();
+
+	// helper function for paint_brackets
+	// temporarily unsets curx and calls update_scur to work
+	void paint_here(char c, int y, int x);
 
 	// get the next character/ action from stdin
 	std::pair<CharType, char> get_next();
