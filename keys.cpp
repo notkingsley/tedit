@@ -3,6 +3,7 @@
 void Manager::key_printable(char c)
 {
 	doc.insert(c, curx++);
+	last_curx = -1;
 
 	// brackets and quotes autocomplete
 	if(c == '[' || c == '{')
@@ -18,13 +19,18 @@ void Manager::key_printable(char c)
 			doc.insert(c, curx);
 }
 
-void Manager::key_arrow(char c)
+void Manager::key_arrow(char c) 
 {
 	switch(c){
 		case 'A':
 			if(cur_line != doc.lines.begin()){
 				--cur_line;
 				--cury;
+
+				if(last_curx > 0)
+					curx = std::max(last_curx, (int)curx);
+				
+				last_curx = std::max(last_curx, (int)curx);
 				curx = std::min(curx, (*cur_line)->length());
 			}
 			break;
@@ -32,6 +38,11 @@ void Manager::key_arrow(char c)
 			if(*cur_line != doc.lines.back()){
 				++cur_line;
 				++cury;
+
+				if(last_curx > 0)
+					curx = std::max(last_curx, (int)curx);
+				
+				last_curx = std::max(last_curx, (int)curx);
 				curx = std::min(curx, (*cur_line)->length());
 			}
 			break;
@@ -43,6 +54,7 @@ void Manager::key_arrow(char c)
 				++cury;
 				curx = 0;
 			}
+			last_curx = -1;
 			break;
 		case 'D':
 			if(curx > 0){
@@ -52,6 +64,7 @@ void Manager::key_arrow(char c)
 				--cury;
 				curx = (*cur_line)->length();
 			}
+			last_curx = -1;
 			break;
 	}
 }
@@ -87,6 +100,7 @@ void Manager::key_backspace()
 
 		Renderer::clean_last_line();
 	}
+	last_curx = -1;
 }
 
 void Manager::key_delete()
@@ -103,6 +117,7 @@ void Manager::key_delete()
 
 		Renderer::clean_last_line();
 	}
+	last_curx = -1;
 }
 
 void Manager::key_enter()
@@ -138,6 +153,7 @@ void Manager::key_enter()
 	// insert indent and render
 	(*cur_line)->insert(0, indent, '\t');
 	doc.render();
+	last_curx = -1;
 }
 
 void Manager::key_ctrl_arrow(char c)
@@ -178,6 +194,7 @@ void Manager::key_ctrl_arrow(char c)
 						&& ispunct((**cur_line)[curx])) ++curx;
 			}
 
+			last_curx = -1;
 			break;
 		}
 		case 'D':
@@ -200,6 +217,7 @@ void Manager::key_ctrl_arrow(char c)
 						--curx;
 			}
 
+			last_curx = -1;
 			break;
 		}
 
@@ -226,6 +244,7 @@ void Manager::key_ctrl_backspace()
 
 	(*cur_line)->erase(curx, start - curx);
 	doc.render();
+	last_curx = -1;
 }
 
 void Manager::key_ctrl_delete()
@@ -253,11 +272,13 @@ void Manager::key_ctrl_delete()
 
 	(*cur_line)->erase(curx, end - curx);
 	doc.render();
+	last_curx = -1;
 }
 
 void Manager::key_ctrl_x()
 {
 	(*cur_line)->erase();
+	paint_brackets();	// legally invalidate internal Line pointers
 	size_t hold = curx;
 	curx = 0;
 	if((*cur_line) != doc.lines.back())
@@ -265,16 +286,19 @@ void Manager::key_ctrl_x()
 	else
 		key_backspace();
 	curx = std::min(hold, (*cur_line)->length());
+	last_curx = -1;
 }
 
 void Manager::key_home()
 {
 	curx = 0;
+	last_curx = -1;
 }
 
 void Manager::key_end()
 {
 	curx = (*cur_line)->length();
+	last_curx = -1;
 }
 
 void Manager::key_page_down()
@@ -283,12 +307,14 @@ void Manager::key_page_down()
 	--cur_line;
 	curx = (*cur_line)->length();
 	cury = doc.lines.size() - 1;
+	last_curx = -1;
 }
 
 void Manager::key_page_up()
 {
 	cur_line = doc.lines.begin();
 	cury = curx = 0;
+	last_curx = -1;
 }
 
 void Manager::key_alt_arrow(char c)
@@ -319,6 +345,7 @@ void Manager::key_alt_arrow(char c)
 			break;
 		}
 	}
+	last_curx = -1;
 }
 
 void Manager::key_comment_line()
@@ -348,6 +375,7 @@ void Manager::key_comment_line()
 			curx += 2;
 		}
 		(*cur_line)->render();
+		last_curx = -1;
 	}
 	else if(ns == "cpp" or ns == "cp" or ns == "hpp" or ns == "c" or ns == "h")
 	{
@@ -363,6 +391,7 @@ void Manager::key_comment_line()
 			curx += 3;
 		}
 		(*cur_line)->render();
+		last_curx = -1;
 	}
 }
 

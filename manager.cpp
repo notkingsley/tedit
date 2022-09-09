@@ -157,6 +157,8 @@ void Manager::listen()
 				break;
 			}
 		}
+		if(last_curx != -1 and last_curx < curx)
+			throw 1;
 		paint_brackets();
 		update_scur();
 		move_to(scury, scurx);
@@ -232,6 +234,7 @@ void Manager::paint_brackets()
 		Renderer::render_line(l1);
 	if(l2)
 		Renderer::render_line(l2);
+	l1 = l2 = nullptr;
 
 	auto fit = [](char c){
 		return c == '(' or c == '[' or c == '{' or c == ')' or c == ']' or c == '}';

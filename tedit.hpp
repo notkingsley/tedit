@@ -146,6 +146,11 @@ class Manager{
 	// scurx is curx if no tabs
 	size_t scurx, scury;
 
+	// former position of curx, 
+	// valid only during a series of up/down arow keys
+	// is always >= curx if valid, else -1
+	int last_curx = -1;
+
 #	ifndef _WIN32
 	// old state of terminal
 	termios oldt;
